@@ -1,127 +1,156 @@
-# ProShop eCommerce Platform
+# ProShop
 
-> eCommerce platform built with the MERN stack & Redux.
+ProShop is a full-stack e-commerce web app where users can browse products, leave reviews, add items to a cart, and pay via PayPal. Admins can manage products, users, and orders through a dedicated dashboard. It is a learning project built with the MERN stack — useful as a reference implementation for authentication, Redux state management, and a PayPal checkout flow.
 
-### THIS PROJECT IS DEPRECATED
-This project is no longer supported. The new project/course has been released. The code has been cleaned up and now uses Redux Toolkit. You can find the new version [HERE](https://github.com/bradtraversy/proshop-v2)
+## Tech Stack
 
-![screenshot](https://github.com/bradtraversy/proshop_mern/blob/master/uploads/Screen%20Shot%202020-09-29%20at%205.50.52%20PM.png)
+| Layer | Library | Version |
+|---|---|---|
+| Runtime | Node.js | 14.6+ |
+| Backend | Express | ^4.17.1 |
+| Database | MongoDB + Mongoose | ^5.10.6 |
+| Auth | jsonwebtoken + bcryptjs | ^8.5.1 / ^2.4.3 |
+| File upload | Multer | ^1.4.2 |
+| Frontend | React | ^16.13.1 |
+| State | Redux + Redux Thunk | ^4.0.5 / ^2.3.0 |
+| Routing | React Router DOM | ^5.2.0 |
+| UI | React Bootstrap | ^1.3.0 |
+| Payments | react-paypal-button-v2 | ^2.6.2 |
+| HTTP client | Axios | ^0.20.0 |
 
-## Features
-
-- Full featured shopping cart
-- Product reviews and ratings
-- Top products carousel
-- Product pagination
-- Product search feature
-- User profile with orders
-- Admin product management
-- Admin user management
-- Admin Order details page
-- Mark orders as delivered option
-- Checkout process (shipping, payment method, etc)
-- PayPal / credit card integration
-- Database seeder (products & users)
-
-## Note on Issues
-Please do not post issues here that are related to your own code when taking the course. Add those in the Udemy Q/A. If you clone THIS repo and there are issues, then you can submit
-
-## Usage
-
-### ES Modules in Node
-
-We use ECMAScript Modules in the backend in this project. Be sure to have at least Node v14.6+ or you will need to add the "--experimental-modules" flag.
-
-Also, when importing a file (not a package), be sure to add .js at the end or you will get a "module not found" error
-
-You can also install and setup Babel if you would like
-
-### Env Variables
-
-Create a .env file in then root and add the following
+## Folder Structure
 
 ```
-NODE_ENV = development
-PORT = 5000
-MONGO_URI = your mongodb uri
-JWT_SECRET = 'abc123'
-PAYPAL_CLIENT_ID = your paypal client id
+proshop_mern/
+├── backend/
+│   ├── config/        # MongoDB connection (db.js)
+│   ├── controllers/   # Route handlers (product, user, order)
+│   ├── data/          # Seed data arrays (products, users)
+│   ├── middleware/    # JWT auth, error handler
+│   ├── models/        # Mongoose schemas (User, Product, Order)
+│   ├── routes/        # Express route definitions
+│   ├── utils/         # generateToken.js
+│   └── server.js      # Express entry point
+├── frontend/
+│   └── src/
+│       ├── actions/   # Redux async actions (thunks)
+│       ├── components/# Reusable UI components
+│       ├── constants/ # Redux action type strings
+│       ├── reducers/  # Redux reducers
+│       ├── screens/   # Page-level components
+│       ├── App.js     # Route definitions
+│       └── store.js   # Redux store + localStorage persistence
+├── uploads/           # Product images (local dev only, not persisted on Heroku)
+├── .env               # Environment variables — create this yourself (see below)
+└── package.json       # Backend deps + all dev scripts
 ```
 
-### Install Dependencies (frontend & backend)
+## Setup
+
+### Prerequisites
+
+- **Node.js v14.6 or higher** — the backend uses ES Modules (`import`/`export`) which require 14.6+. Check with `node -v`.
+- **MongoDB** — either:
+  - Local: [install MongoDB Community](https://www.mongodb.com/try/download/community) and run `mongod`
+  - Cloud: create a free cluster at [MongoDB Atlas](https://www.mongodb.com/atlas) and copy the connection string
+
+### 1. Environment Variables
+
+Create a `.env` file in the project root (not inside `frontend/`):
 
 ```
+NODE_ENV=development
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/proshop
+JWT_SECRET=any_long_random_string
+PAYPAL_CLIENT_ID=your_paypal_sandbox_client_id
+```
+
+- `MONGO_URI` — for Atlas, use the connection string from the Atlas dashboard (format: `mongodb+srv://user:pass@cluster.mongodb.net/proshop`)
+- `JWT_SECRET` — any string; used to sign auth tokens
+- `PAYPAL_CLIENT_ID` — must be a **sandbox** client ID for local development (see Troubleshooting)
+
+### 2. Install Dependencies
+
+From the project root, install backend and frontend dependencies separately:
+
+```bash
 npm install
-cd frontend
-npm install
+cd frontend && npm install && cd ..
 ```
 
-### Run
+### 3. Seed the Database
 
-```
-# Run frontend (:3000) & backend (:5000)
-npm run dev
+The app starts with an empty database. Import sample products and users:
 
-# Run backend only
-npm run server
-```
-
-## Build & Deploy
-
-```
-# Create frontend prod build
-cd frontend
-npm run build
-```
-
-There is a Heroku postbuild script, so if you push to Heroku, no need to build manually for deployment to Heroku
-
-### Seed Database
-
-You can use the following commands to seed the database with some sample users and products as well as destroy all data
-
-```
-# Import data
+```bash
 npm run data:import
-
-# Destroy data
-npm run data:destroy
 ```
 
+Sample accounts created:
+
+| Email | Password | Role |
+|---|---|---|
+| admin@example.com | 123456 | Admin |
+| john@example.com | 123456 | Customer |
+| jane@example.com | 123456 | Customer |
+
+### 4. Run in Development
+
+```bash
+npm run dev
 ```
-Sample User Logins
 
-admin@example.com (Admin)
-123456
+This starts both servers concurrently:
+- Backend API: `http://localhost:5000`
+- Frontend: `http://localhost:3000` (proxies `/api/*` to port 5000)
 
-john@example.com (Customer)
-123456
+Open `http://localhost:3000` in your browser.
 
-jane@example.com (Customer)
-123456
+## Other Commands
+
+```bash
+npm run server       # Backend only (with nodemon)
+npm run client       # Frontend only
+npm run data:destroy # Wipe all data from the database
 ```
 
+## Deployment (Heroku)
 
-## License
+Set all `.env` variables as Heroku config vars:
 
-The MIT License
+```bash
+heroku config:set NODE_ENV=production
+heroku config:set MONGO_URI=your_atlas_uri
+heroku config:set JWT_SECRET=your_secret
+heroku config:set PAYPAL_CLIENT_ID=your_client_id
+```
 
-Copyright (c) 2020 Traversy Media https://traversymedia.com
+Push to Heroku — the `heroku-postbuild` script automatically builds the frontend. Express then serves the static build at `/` and the API at `/api/*`.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Note: the `uploads/` folder is ephemeral on Heroku. Product images uploaded via the admin panel will be lost on each deploy.
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+## Troubleshooting
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+**Products don't appear on the home page**
+The database is empty. Run `npm run data:import` to seed it.
+
+**"Cannot read property '_id' of null" on the order page**
+Your browser has a JWT token for a user that was deleted when you last ran `npm run data:import`. Log out and log back in to get a fresh token.
+
+**MongoDB connection error on startup**
+- Local MongoDB: make sure `mongod` is running
+- Atlas: check that your IP address is whitelisted in the Atlas Network Access settings, and that the username/password in `MONGO_URI` are correct
+
+**PayPal button doesn't appear / PayPal errors**
+`PAYPAL_CLIENT_ID` must be a **sandbox** client ID, obtained from [developer.paypal.com](https://developer.paypal.com) → Apps & Credentials → Sandbox. Production client IDs do not work in development.
+
+**Port already in use**
+`npm run dev` requires ports 3000 and 5000 to be free. Find and stop whatever is using them:
+```bash
+lsof -ti:3000 | xargs kill
+lsof -ti:5000 | xargs kill
+```
+
+**API calls fail with network errors in development**
+The frontend proxies `/api/*` to `http://127.0.0.1:5000` via the `proxy` field in `frontend/package.json`. This only works when running `react-scripts start` — it does not apply to the production build. Make sure the backend is running before starting the frontend.
