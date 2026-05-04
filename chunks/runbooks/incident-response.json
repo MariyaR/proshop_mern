@@ -1,0 +1,282 @@
+[
+  {
+    "text": "# Incident Response Runbook\n\n**Purpose:** Define structured response to production incidents (P0/P1 severity).  \n**Audience:** On-call engineers, incident commanders, DevOps, support teams.  \n**Duration:** Varies (15 minutes to hours, depending on severity and root cause).  \n**Goal:** Minimize user impact, prevent cascading failures, gather data for post-incident review.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Severity Levels\n\n| Level | Definition | Examples | Response Time |\n|-------|-----------|----------|---|\n| **P0 – Critical** | Complete service outage; users cannot access app or core features. | Database unreachable, app won't start, payment system down. | Immediate (< 5 min) |\n| **P1 – Major** | Significant functionality degraded; affects >1% of users or revenue-critical paths. | Checkout broken for specific payment methods, 10sec+ latency spikes. | < 15 minutes |\n| **P2 – Moderate** | Limited functionality affected; annoying but workaround exists. | Admin search slow, order history doesn't load (but orders still process). | < 1 hour |\n| **P3 – Minor** | Cosmetic or very limited impact. | Typo in product description, icon misaligned. | No urgency |",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Severity Levels",
+    "chunk_index": 1
+  },
+  {
+    "text": "## Incident Phases\n\n```\nDiscovery (How did we find out?)\n    ↓\nDeclaration (Officially call it an incident)\n    ↓\nTriage (Assess severity, gather team)\n    ↓\nMitigation (Stop the bleeding, quick fix or rollback)\n    ↓\nResolution (Root cause fix, if needed)\n    ↓\nVerification (Confirm stability)\n    ↓\nCommunication (Notify users/stakeholders)\n    ↓\nPost-Incident (Postmortem, action items, documentation)\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Incident Phases",
+    "chunk_index": 2
+  },
+  {
+    "text": "### How Incidents Are Detected\n\n- **Monitoring alerts:** Error rate spike, latency >2s, CPU >90%.\n- **User reports:** Support email, Slack message, or social media complaint.\n- **Manual discovery:** Engineer testing finds broken feature.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "How Incidents Are Detected",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Declare the Incident\n\nWhen you suspect a critical issue:\n\n1. **Confirm it's real:**\n   ```bash\n   # Is the app up?\n   curl -i https://proshop-prod.herokuapp.com/health\n   \n   # Check logs for errors\n   heroku logs --app proshop-prod --tail\n   ```\n\n2. **Assess severity:**\n   - Can users access the homepage? → Not P0.\n   - Is checkout broken? → P0 if revenue-critical.\n   - Are all orders rejected? → P0.\n\n3. **Declare in Slack/war room:**\n   ```\n   🚨 INCIDENT DECLARED - Severity: P1\n   Summary: Checkout payment processing failing for PayPal users\n   Status: Investigating\n   Incident Commander: @engineer-name\n   War Room: #incidents channel\n   ```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Declare the Incident",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Escalate If Needed\n\n```\nP0 → Page on-call engineer immediately (phone call, SMS)\nP1 → Notify on-call + team lead within 5 minutes\nP2 → Notify team, no page required\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Escalate If Needed",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Gather the Team\n\nFor P0/P1, assemble:\n- **Incident Commander (IC):** Leads response, communicates status.\n- **Lead Engineer:** Knows the code, can deploy fixes.\n- **Database Admin:** If DB-related.\n- **Support Lead:** Communicates with customers.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Gather the Team",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Diagnose the Problem\n\nAsk:\n\n| Question | Why | How to Find |\n|----------|-----|-----------|\n| **When did it start?** | Narrow down scope. | Check logs timestamp, alert history. |\n| **What changed recently?** | Likely cause. | `git log --oneline` last 24 hours. |\n| **Who is affected?** | Scope impact. | Logs showing affected user IDs, regions. |\n| **Is it complete outage or partial?** | Affects response strategy. | Test multiple API endpoints, regions. |\n| **Is data being lost?** | Critical for orders. | Check order counts, recent orders in DB. |",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Diagnose the Problem",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Quick Diagnostics\n\n```bash\n# Check app health\nheroku logs --app proshop-prod --tail | head -50\n\n# Check database connectivity\nheroku run \"mongosh MONGO_URI --eval 'db.adminCommand(\\\"ping\\\")'\" --app proshop-prod\n\n# Check CPU/memory\nheroku dyno:type --app proshop-prod\n\n# Check recent deployments\nheroku releases --app proshop-prod | head -10\n\n# Check error rate\nheroku logs --app proshop-prod | grep -i error | wc -l\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Quick Diagnostics",
+    "chunk_index": 8
+  },
+  {
+    "text": "## Phase 3: Mitigation (10–20 Minutes)\n\nChoose mitigation strategy based on root cause:",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Phase 3: Mitigation (10–20 Minutes)",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Strategy A: Immediate Rollback (Fastest)\n\nIf incident started after a recent deploy:\n\n```bash\n# Check releases\nheroku releases --app proshop-prod\n\n# Rollback to previous stable version\nheroku releases:rollback v20 --app proshop-prod\n```\n\n**Pros:** Instant. No debugging needed.  \n**Cons:** Loses features from latest deploy. Might not fix root cause if issue is environmental.\n\n**When to use:** After deployment, clear broken feature introduced.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Strategy A: Immediate Rollback (Fastest)",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Strategy B: Feature Flag Kill Switch (1–2 Minutes)\n\nIf broken feature is behind a feature flag:\n\n```javascript\n// Update flag in MongoDB\ndb.featureflags.updateOne(\n  { key: \"new_checkout_flow\" },\n  { $set: { enabled: false, rolloutPercentage: 0 } }\n)\n```\n\nAll users revert to old code path. No redeploy needed.\n\n**Pros:** Surgical, instant, no full rollback required.  \n**Cons:** Only works if feature was flagged.\n\n**When to use:** Specific feature is broken, rest of system is fine.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Strategy B: Feature Flag Kill Switch (1–2 Minutes)",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Strategy C: Restart / Scaling (30 Seconds)\n\nIf issue is a one-time glitch (memory leak, race condition):\n\n```bash\n# Restart the app dyno\nheroku dyno:restart web.1 --app proshop-prod\n\n# Wait 30 seconds\nsleep 30\n\n# Verify recovery\ncurl https://proshop-prod.herokuapp.com/health\n```\n\n**Pros:** Often fixes transient issues.  \n**Cons:** Doesn't fix root cause, issue may recur.\n\n**When to use:** Sporadic errors or memory spikes.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Strategy C: Restart / Scaling (30 Seconds)",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Strategy D: Database Failover (2–5 Minutes)\n\nIf MongoDB Atlas is having issues:\n\n1. **In MongoDB Atlas dashboard:**\n   - Navigate to your cluster.\n   - Click \"Failover\" → \"Initiate Failover\" for replica set.\n   - Wait 2–3 minutes for failover to complete.\n\n2. **Verify connection:**\n   ```bash\n   heroku run \"mongosh MONGO_URI --eval 'db.version()'\" --app proshop-prod\n   ```\n\n**Pros:** Eliminates DB as single point of failure.  \n**Cons:** Brief downtime during failover, data in flight may be lost (rare with modern DBs).\n\n**When to use:** Database is unresponsive or showing replication lag.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Strategy D: Database Failover (2–5 Minutes)",
+    "chunk_index": 13
+  },
+  {
+    "text": "## Phase 4: Resolution (20 Minutes – Hours)\n\nOnce user impact is mitigated (system back up), work on root cause:",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Phase 4: Resolution (20 Minutes – Hours)",
+    "chunk_index": 14
+  },
+  {
+    "text": "### Example Root Cause Scenarios\n\n**Scenario 1: Payment API credential expired**\n\n```bash\n# Check error logs for 401/403 from PayPal\nheroku logs --app proshop-prod | grep -i paypal\n\n# Fix:\nheroku config:set PAYPAL_CLIENT_ID=\"<new-valid-id>\" --app proshop-prod\n\n# Redeploy or restart\nheroku dyno:restart web.1 --app proshop-prod\n```\n\n**Scenario 2: Database connection timeout**\n\n```bash\n# Check if MongoDB Atlas cluster is overloaded\n# In MongoDB Atlas dashboard → Metrics tab\n\n# Add more connection pool\n# or scale up the cluster (M5 → M10)\n\n# Update MONGO_URI if needed\nheroku config:set MONGO_URI=\"new_uri\" --app proshop-prod\n\n# Restart app\nheroku dyno:restart web.1 --app proshop-prod\n```\n\n**Scenario 3: Code bug in recent deploy**\n\n```bash\n# 1. Fix code locally\n# vim backend/controllers/orderController.js\n\n# 2. Test fix locally\nnpm run dev\n# Test checkout flow\n\n# 3. Commit and push\ngit add .\ngit commit -m \"Fix: order payment processing bug [INCIDENT-123]\"\ngit push origin main\n\n# 4. Deploy to production\ngit push heroku main\n\n# 5. Verify\ncurl https://proshop-prod.herokuapp.com/health\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Example Root Cause Scenarios",
+    "chunk_index": 15
+  },
+  {
+    "text": "## Phase 5: Verification (5–10 Minutes)\n\nConfirm issue is fully resolved:\n\n```bash\n# 1. Check app logs (no errors last 5 minutes)\nheroku logs --app proshop-prod --num 50 | grep -i error\n\n# 2. Test core flows manually\ncurl https://proshop-prod.herokuapp.com/api/products | jq '.[0].name'\ncurl -X POST https://proshop-prod.herokuapp.com/api/auth/login \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\":\"test@example.com\",\"password\":\"123456\"}'\n\n# 3. Check metrics (latency, error rate back to baseline)\nheroku logs --app proshop-prod --tail | grep response_time | tail -20\n\n# 4. Monitor for 10 minutes (no regression)\nwatch -n 30 'heroku logs --app proshop-prod --num 5'\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Phase 5: Verification (5–10 Minutes)",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Timeline\n\n| Time | Who | Message | Channel |\n|------|-----|---------|---------|\n| T+0 | IC | \"Incident declared. Investigating.\" | Slack #incidents |\n| T+5 | IC | \"Issue: Payment processing failing for 5% of users. Rollback in progress.\" | Slack + Email |\n| T+10 | IC | \"Rollback complete. System recovering. Analyzing root cause.\" | Slack + Email |\n| T+30 | IC | \"System stable. All users can checkout. Root cause identified: expired PayPal creds. Fix deployed.\" | Slack + Email |\n| T+60 | IC | \"All-clear. No further action needed. Postmortem scheduled for tomorrow.\" | Slack + Email |",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Timeline",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Customer Communication (If >5 min downtime)\n\nEmail template:\n\n```\nSubject: Incident Update: proshop Service\n\nDear Customers,\n\nWe experienced a brief service interruption from 14:22 UTC to 14:32 UTC \non April 15, affecting checkout functionality for approximately 30 minutes.\n\nRoot cause: Payment processor credentials expired.\nResolution: Credentials renewed and system verified.\n\nImpact: ~500 orders delayed, zero data loss.\n\nCompensation: We're issuing $5 store credits to affected accounts.\n\nWe apologize for the inconvenience and are implementing additional monitoring \nto prevent recurrence.\n\nBest regards,\nThe ProShop Team\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Customer Communication (If >5 min downtime)",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Postmortem (Schedule within 24 hours)\n\n**Postmortem template:**\n\n```markdown",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Postmortem (Schedule within 24 hours)",
+    "chunk_index": 19
+  },
+  {
+    "text": "## Incident Postmortem: PayPal Payment Processor Outage\n\n**Date:** 2024-04-15  \n**Duration:** 10 minutes (14:22–14:32 UTC)  \n**Severity:** P1  \n**Incident ID:** INC-2024-042",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Incident Postmortem: PayPal Payment Processor Outage",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Timeline\n\n| Time | Event |\n|------|-------|\n| 14:20 | Monitoring alert: Payment API returns 401 Unauthorized |\n| 14:22 | Customer reports: \"Can't checkout\" |\n| 14:24 | IC declared incident, notified team |\n| 14:26 | Root cause identified: PayPal credentials expired April 15 |\n| 14:28 | Credentials renewed, redeployed |\n| 14:32 | Payment flow verified working; all-clear |",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Timeline",
+    "chunk_index": 21
+  },
+  {
+    "text": "### Root Cause\n\nPayPal API credentials have 1-year expiration (set to April 15, 2024). \nNo calendar reminder was set. Credentials expired at midnight UTC.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Root Cause",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Impact\n\n- **User-facing:** 10 minutes of checkout failures.\n- **Business:** ~150 orders delayed (no revenue loss, orders retried after fix).\n- **Reputational:** 5 social media complaints.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Impact",
+    "chunk_index": 23
+  },
+  {
+    "text": "### Remediation (Action Items)\n\n| Item | Owner | Due Date | Status |\n|------|-------|----------|--------|\n| Set calendar reminder for credential renewal 30 days before expiry | DevOps | 2024-04-16 | 🔄 |\n| Add automated credential expiry monitoring | Backend Lead | 2024-04-25 | 🔄 |\n| Document all 3rd-party API credential dates in CREDENTIALS.md | Security | 2024-04-16 | 🔄 |\n| Review similar credentials (Stripe, AWS keys) for expiry | DevOps | 2024-04-16 | 🔄 |",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Remediation (Action Items)",
+    "chunk_index": 24
+  },
+  {
+    "text": "### Prevention\n\n✅ Add Datadog/Sentry alert for payment API 401 errors (early warning).  \n✅ Implement credential rotation checklist (quarterly).  \n✅ Add lifecycle email from PayPal to security@company.com (90-day warning).",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Prevention",
+    "chunk_index": 25
+  },
+  {
+    "text": "### What Went Well\n\n- Team responded quickly (2-minute diagnosis).\n- Clear communication to customers.\n- Fix deployed in <8 minutes.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "What Went Well",
+    "chunk_index": 26
+  },
+  {
+    "text": "### What Could Be Better\n\n- No automated alert for approaching credential expiry.\n- Postmortem not scheduled immediately (should be <24 hours).\n- No runbook for this specific failure scenario.\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "What Could Be Better",
+    "chunk_index": 27
+  },
+  {
+    "text": "### Action Items (Follow-Up)\n\nCreate a Jira/GitHub issue for each action item. Review in weekly standup until resolved.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Action Items (Follow-Up)",
+    "chunk_index": 28
+  },
+  {
+    "text": "### Knowledge Sharing\n\nDocument the incident and lessons learned:\n- Add this scenario to the runbook (this document).\n- Share postmortem in team Slack/wiki.\n- Update monitoring to catch similar issues early.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Knowledge Sharing",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Incident Commander (IC)\n\n- Declares incident and sets severity.\n- Owns timeline and communications.\n- Makes go/no-go decisions (rollback, escalate, etc.).\n- Facilitates postmortem.\n\n**Example IC decision tree:**\n\n```\nIs the system completely down (P0)?\n  ├─ YES → Immediate rollback + notify exec team\n  └─ NO → Is checkout broken (P1)?\n            ├─ YES → Kill switch or quick fix + 15-min update\n            └─ NO → Diagnose, plan fix, standard cadence\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Incident Commander (IC)",
+    "chunk_index": 30
+  },
+  {
+    "text": "### Engineer Lead\n\n- Provides technical diagnosis.\n- Codes/deploys fixes.\n- Reports status to IC every 5 minutes (for P0/P1).",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Engineer Lead",
+    "chunk_index": 31
+  },
+  {
+    "text": "### Support Lead\n\n- Monitors inbound tickets/social media.\n- Prepares customer communication drafts.\n- Tracks customer impact (# of affected orders, complaints, etc.).",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Support Lead",
+    "chunk_index": 32
+  },
+  {
+    "text": "## Escalation Contacts\n\n```\nOn-call Engineer: [phone number]\nTeam Lead: [email/phone]\nVP Engineering: [emergency contact]\nCEO: [for P0 + media attention]\n```",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Escalation Contacts",
+    "chunk_index": 33
+  },
+  {
+    "text": "## Reference Commands\n\n| Command | Purpose |\n|---------|---------|\n| `heroku logs --tail` | Live logs |\n| `heroku releases:rollback v<N>` | Rollback to release N |\n| `heroku dyno:restart` | Restart app |\n| `heroku config` | View env vars |\n| `git log --oneline` | Recent commits |\n| `curl https://proshop-prod.herokuapp.com/health` | Health check |\n\n---\n\n**Last updated:** M3 curriculum.  \n**Reminder:** Blameless culture. Postmortems are learning opportunities, not witch hunts.",
+    "source": "runbooks/incident-response.md",
+    "category": "core",
+    "title": "4. Monitor for 10 minutes (no regression)",
+    "section": "Reference Commands",
+    "chunk_index": 34
+  }
+]

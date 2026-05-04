@@ -1,0 +1,66 @@
+[
+  {
+    "text": "## Overview\n\nUser management endpoints are restricted to administrators only. These endpoints allow admin users to view, modify, and delete user accounts from the system.",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "Overview",
+    "chunk_index": 0
+  },
+  {
+    "text": "### GET /api/users\n\nRetrieve a list of all registered users in the system.\n\n**Auth:** Private/Admin  \n**Description:** Fetch all user accounts (admin only)\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**Query Parameters:** None\n\n**Response 200 (Success):**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439011\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"isAdmin\": false,\n    \"createdAt\": \"2024-01-15T10:30:00.000Z\",\n    \"updatedAt\": \"2024-01-15T10:30:00.000Z\"\n  },\n  {\n    \"_id\": \"507f1f77bcf86cd799439012\",\n    \"name\": \"Jane Smith\",\n    \"email\": \"jane@example.com\",\n    \"isAdmin\": true,\n    \"createdAt\": \"2024-01-10T08:15:00.000Z\",\n    \"updatedAt\": \"2024-01-10T08:15:00.000Z\"\n  }\n]\n```\n\n**Errors:**\n- 401: Not authorized, token failed (invalid/expired token)\n- 401: Not authorized, no token\n- 401: Not authorized as an admin (user lacks admin privileges)\n\n**Notes:**\n- Returns all users without pagination\n- Passwords are excluded from response\n- Timestamps indicate account creation and last modification\n- Only admin users can access this endpoint\n\n---",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "GET /api/users",
+    "chunk_index": 1
+  },
+  {
+    "text": "### GET /api/users/:id\n\nRetrieve detailed information about a specific user by ID.\n\n**Auth:** Private/Admin  \n**Description:** Get user account details by user ID\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the user\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"isAdmin\": false,\n  \"createdAt\": \"2024-01-15T10:30:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:30:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n- 404: User not found (invalid ID or deleted user)\n\n**Notes:**\n- Password field is excluded (using .select('-password'))\n- ID must be valid MongoDB ObjectId format\n- Case-sensitive endpoint path\n\n---",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "GET /api/users/:id",
+    "chunk_index": 2
+  },
+  {
+    "text": "### PUT /api/users/:id\n\nUpdate user account details (name, email, or admin status).\n\n**Auth:** Private/Admin  \n**Description:** Modify user account properties\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the user\n\n**Request body:**\n```json\n{\n  \"name\": \"John Updated\",\n  \"email\": \"newemail@example.com\",\n  \"isAdmin\": true\n}\n```\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"John Updated\",\n  \"email\": \"newemail@example.com\",\n  \"isAdmin\": true\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n- 404: User not found\n\n**Notes:**\n- All fields are optional; only provided fields are updated\n- Cannot update password through this endpoint (use profile endpoint)\n- Admin role can only be modified through this endpoint\n- Email uniqueness is enforced\n\n---",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "PUT /api/users/:id",
+    "chunk_index": 3
+  },
+  {
+    "text": "### DELETE /api/users/:id\n\nPermanently delete a user account and all associated data.\n\n**Auth:** Private/Admin  \n**Description:** Remove user account from system (admin only)\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the user\n\n**Response 200 (Success):**\n```json\n{\n  \"message\": \"User removed\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n- 404: User not found\n\n**Notes:**\n- Deletion is permanent and cannot be undone\n- All associated orders and reviews remain in system\n- User account cannot be recovered after deletion\n- Attempting to delete non-existent user returns 404\n\n---",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "DELETE /api/users/:id",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Admin Authorization\n\nAll user management endpoints require:\n1. Valid JWT token in `Authorization: Bearer {token}` header\n2. User account must have `isAdmin: true` flag\n3. Both conditions must be met or request returns 401 error\n\n**Middleware stack:**\n1. `protect` middleware: validates JWT token\n2. `admin` middleware: checks isAdmin flag\n\n---",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "Admin Authorization",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Data Model\n\nUser documents contain:\n\n| Field | Type | Description |\n|-------|------|-------------|\n| `_id` | ObjectId | Unique user identifier |\n| `name` | String | User's display name |\n| `email` | String | Unique email address |\n| `password` | String | Hashed password (excluded from responses) |\n| `isAdmin` | Boolean | Admin privilege flag (default: false) |\n| `createdAt` | Date | Account creation timestamp |\n| `updatedAt` | Date | Last modification timestamp |\n\n---",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "Data Model",
+    "chunk_index": 6
+  },
+  {
+    "text": "## Response Codes\n\n- 200: Successful request\n- 201: Resource created\n- 400: Validation error\n- 401: Authentication failed or insufficient permissions\n- 404: User not found",
+    "source": "api/users.md",
+    "category": "core",
+    "title": "User Management API Reference",
+    "section": "Response Codes",
+    "chunk_index": 7
+  }
+]

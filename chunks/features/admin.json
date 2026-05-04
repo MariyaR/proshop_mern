@@ -1,0 +1,522 @@
+[
+  {
+    "text": "# Admin Features — ProShop MERN\n\nПокрывает управление товарами, пользователями и заказами в административной панели. Все admin-маршруты защищены двойным middleware: `protect` + `admin`.\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "### Назначение\nУсловное отображение admin-меню в хедере и защита всех admin-маршрутов от обычных пользователей. Persona: системный администратор магазина.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `Header.js` — условный рендер:\n  ```jsx\n  {userInfo && userInfo.isAdmin && (\n    <NavDropdown title='Admin' id='adminmenu'>\n      <LinkContainer to='/admin/userlist'><NavDropdown.Item>Users</NavDropdown.Item></LinkContainer>\n      <LinkContainer to='/admin/productlist'><NavDropdown.Item>Products</NavDropdown.Item></LinkContainer>\n      <LinkContainer to='/admin/orderlist'><NavDropdown.Item>Orders</NavDropdown.Item></LinkContainer>\n    </NavDropdown>\n  )}\n  ```\n- **Backend guard:** middleware chain `protect, admin` на всех admin-роутах:\n  - `admin` middleware: `if (req.user && req.user.isAdmin) { next() } else { res.status(401) throw new Error('Not authorized as an admin') }`\n- **Frontend guard:** каждый admin screen в `useEffect`:\n  ```js\n  if (!userInfo || !userInfo.isAdmin) { history.push('/login') }\n  ```\n- **`isAdmin` поле:** хранится в User model (default: `false`), возвращается в JWT payload как часть userInfo.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 2
+  },
+  {
+    "text": "### API endpoints\n- Admin-меню не делает API-запросов. Видимость определяется `userInfo.isAdmin` из Redux state.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Edge cases\n- Пользователь знает URL admin-страницы → frontend guard редиректит на `/login`.\n- Прямой API-запрос с токеном не-admin пользователя → `admin` middleware возвращает HTTP 401.\n- `userInfo.isAdmin` в Redux может быть устаревшим если admin-статус изменили другим сессией → решается logout/login.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Auth (JWT, `isAdmin` поле), User model.\n- Все admin features зависят от этого гейтинга.\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Назначение\nТаблица всех товаров с возможностью редактирования и удаления каждого, а также кнопка создания нового товара. Persona: контент-менеджер, управляющий ассортиментом.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 6
+  },
+  {
+    "text": "### User flow\n1. Admin открывает `/admin/productlist` (из меню Admin → Products).\n2. Таблица: ID, NAME, PRICE, CATEGORY, BRAND, кнопки Edit/Delete.\n3. Клик «Edit» → `/admin/product/:id/edit`.\n4. Клик «Delete» → `window.confirm('Are you sure')` → удаление.\n5. Клик «Create Product» → создаётся product с дефолтными значениями → редирект на форму редактирования.\n6. Пагинация по страницам.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `ProductListScreen.js` — читает `match.params.pageNumber`.\n- **Actions:**\n  - `listProducts('', pageNumber)` — GET `/api/products?pageNumber=N` (пустой keyword — все товары).\n  - `deleteProduct(id)` — DELETE `/api/products/:id`.\n  - `createProduct()` — POST `/api/products` (без body).\n- **Reducers:** `productListReducer`, `productDeleteReducer`, `productCreateReducer`.\n- **`useEffect` зависимости:** `successDelete`, `successCreate` — обновляет список после операций.\n- После `successCreate` → `history.push('/admin/product/${createdProduct._id}/edit')`.\n- `PRODUCT_CREATE_RESET` диспатчится при входе на страницу.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 8
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products?pageNumber=N` — public (используется без auth).\n- `DELETE /api/products/:id` — private + admin, response: `{ message: 'Product removed' }`.\n- `POST /api/products` — private + admin, response: созданный product, HTTP 201.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Edge cases\n- Удаление с `window.confirm` — нет undo. После `successDelete` список автоматически обновляется.\n- Ошибка удаления (`errorDelete`) → `<Message variant='danger'>` над таблицей.\n- Создание товара при ошибке (`errorCreate`) → `<Message variant='danger'>`.\n- `listProducts` без keyword использует ту же функцию что и публичный каталог — admin видит все товары.\n- Пагинация admin использует URL `/admin/productlist/:pageNumber` (отличается от user URL).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product model, Auth + admin middleware, Paginate component.\n- От этой фичи зависят: Product Edit (переход через Edit button), Product Create (переход после создания).\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 11
+  },
+  {
+    "text": "## Feature 3: Admin Product Create (Sample Product)",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Feature 3: Admin Product Create (Sample Product)",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Назначение\nБыстрое создание товара-заглушки с дефолтными значениями. Сразу открывается форма редактирования для заполнения реальными данными. Persona: контент-менеджер, добавляющий новый товар.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Технический impl\n- **Action:** `createProduct()` — POST `/api/products` с пустым body `{}`.\n- **Controller:** создаёт фиксированный объект:\n  ```js\n  const product = new Product({\n    name: 'Sample name',\n    price: 0,\n    user: req.user._id,\n    image: '/images/sample.jpg',\n    brand: 'Sample brand',\n    category: 'Sample category',\n    countInStock: 0,\n    numReviews: 0,\n    description: 'Sample description',\n  })\n  ```\n- `user` поле → ID текущего admin-пользователя.\n- После создания → автоматический переход на `ProductEditScreen` для заполнения.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 14
+  },
+  {
+    "text": "### API endpoints\n- `POST /api/products` — private + admin, body: `{}`, response: product с дефолтными значениями, HTTP 201.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Edge cases\n- Если admin не завершает редактирование → в БД остаётся \"Sample\" товар с нулевой ценой.\n- Нет валидации на уникальность имени — можно создать несколько одинаковых \"Sample name\".\n- `countInStock: 0` → товар сразу \"Out Of Stock\" в публичном каталоге.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product model, admin auth.\n- Немедленно запускает: Product Edit flow (Feature 4).\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Назначение\nФорма редактирования существующего товара: имя, цена, изображение (URL или upload), brand, category, countInStock, description. Persona: контент-менеджер.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 18
+  },
+  {
+    "text": "### User flow\n1. Открывает `/admin/product/:id/edit`.\n2. Форма предзаполнена текущими данными товара.\n3. Меняет поля.\n4. Загружает изображение через file picker (или вводит URL вручную).\n5. Кликает «Update».\n6. При успехе → редирект на `/admin/productlist`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `ProductEditScreen.js` — 7 state переменных + `uploading`.\n- **Actions:**\n  - `listProductDetails(productId)` — GET `/api/products/:id` для предзаполнения.\n  - `updateProduct({ _id, name, price, image, brand, category, description, countInStock })` — PUT `/api/products/:id`.\n- **File Upload:** `uploadFileHandler` — прямой `axios.post('/api/upload', formData)` (не через Redux action):\n  ```js\n  const config = {\n    headers: {\n      'Content-Type': 'multipart/form-data',\n      Authorization: userInfo ? `Bearer ${userInfo.token}` : undefined\n    }\n  }\n  const { data } = await axios.post('/api/upload', formData, config)\n  setImage(data) // сервер возвращает путь к файлу\n  ```\n- **Важно:** токен берётся напрямую из `store.getState()` внутри handler (не из useSelector) — нестандартный паттерн.\n- После `successUpdate` → `PRODUCT_UPDATE_RESET` + redirect.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 20
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products/:id` — public.\n- `PUT /api/products/:id` — private + admin, body: все поля товара, response: обновлённый product.\n- `POST /api/upload` — private + admin, multipart/form-data, response: путь к файлу (строка).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 21
+  },
+  {
+    "text": "### Edge cases\n- Поля формы не имеют min/max валидации — price может быть отрицательным, countInStock отрицательным.\n- `setImage(data)` после upload устанавливает путь к загруженному файлу; при сабмите формы используется этот путь.\n- Если изменить URL вручную и также загрузить файл → победит последнее действие.\n- `uploading=true` показывает Loader, блокирует UX во время upload.\n- `PRODUCT_UPDATE_RESET` диспатчится при входе на страницу для сброса старого success-флага.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product Detail action, Image Upload (Feature 7), Auth + admin.\n- От изменений зависят: каталог, детальная страница, карусель (если обновился рейтинг).\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 23
+  },
+  {
+    "text": "### Назначение\nБезвозвратное удаление товара из базы данных. Требует подтверждения через браузерный диалог. Persona: администратор, убирающий устаревший товар.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 24
+  },
+  {
+    "text": "### User flow\n1. В `ProductListScreen` → клик кнопки Delete (иконка мусорки).\n2. Браузерный `window.confirm('Are you sure')`.\n3. При подтверждении → `dispatch(deleteProduct(id))`.\n4. После успеха список автоматически обновляется.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 25
+  },
+  {
+    "text": "### Технический impl\n- **Action:** `deleteProduct(id)` — DELETE `/api/products/:id` с Bearer token.\n- **Controller:** `Product.findById(req.params.id)` → `product.remove()`.\n- **`successDelete`** → в useEffect ProductListScreen тригерит `listProducts` повторно.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 26
+  },
+  {
+    "text": "### API endpoints\n- `DELETE /api/products/:id` — private + admin, response: `{ message: 'Product removed' }`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 27
+  },
+  {
+    "text": "### Edge cases\n- Товар удалён, но он ещё в чьей-то корзине (localStorage) → при checkout создание заказа с несуществующим product ID → Order сохранится в БД (FK constraint отсутствует в MongoDB по умолчанию).\n- Товар удалён, но существуют заказы с ним → заказы не ломаются (orderItems хранит snapshot данных).\n- `window.confirm` не может быть стилизован и блокирует JS thread.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 28
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product model, Admin auth.\n- Не удаляет связанные изображения из `/uploads/` папки.\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Назначение\nТаблица всех пользователей системы с отображением admin-статуса, кнопками редактирования и удаления. Persona: super-admin, управляющий доступами.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 30
+  },
+  {
+    "text": "### User flow\n1. Admin открывает `/admin/userlist` (Admin → Users).\n2. Таблица: ID, NAME, EMAIL (кликабельный mailto), ADMIN (чекмарк или X), кнопки Edit/Delete.\n3. Клик «Edit» → `/admin/user/:id/edit`.\n4. Клик «Delete» → `window.confirm` → удаление.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 31
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `UserListScreen.js` — guard `userInfo.isAdmin`.\n- **Actions:**\n  - `listUsers()` → GET `/api/users` (all users).\n  - `deleteUser(id)` → DELETE `/api/users/:id`.\n- **Reducers:** `userListReducer`, `userDeleteReducer`.\n- **`successDelete`** в useEffect зависимостях → автообновление после удаления.\n- Admin-статус: иконка `fa-check` зелёная если isAdmin, `fa-times` красная если нет.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 32
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/users` — private + admin, response: массив всех users (включая password hash! — security issue).\n- `DELETE /api/users/:id` — private + admin, response: `{ message: 'User removed' }`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 33
+  },
+  {
+    "text": "### Edge cases\n- `GET /api/users` возвращает password hash в ответе (контроллер использует `User.find({})` без `.select('-password')`) — security issue учебного проекта.\n- Admin может удалить самого себя → потеря доступа к системе.\n- Нет подтверждения email при удалении.\n- После удаления `listUsers()` вызывается повторно через useEffect dependency.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 34
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: User model, Admin auth.\n- От этой фичи зависит: User Edit (переход через Edit button).\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 35
+  },
+  {
+    "text": "### Назначение\nФорма редактирования данных пользователя: имя, email, admin-статус (checkbox). Позволяет выдавать и отзывать admin-права. Persona: super-admin.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 36
+  },
+  {
+    "text": "### User flow\n1. Открывает `/admin/user/:id/edit`.\n2. Форма предзаполнена: name, email, isAdmin checkbox.\n3. Меняет данные.\n4. Кликает «Update».\n5. При успехе → редирект на `/admin/userlist`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 37
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `UserEditScreen.js` — 3 state переменных: name, email, isAdmin.\n- **Actions:**\n  - `getUserDetails(userId)` → GET `/api/users/:id` (admin endpoint, не `/profile`).\n  - `updateUser({ _id, name, email, isAdmin })` → PUT `/api/users/:id`.\n- **Reducer:** `userUpdateReducer` — `{ loading, error, success }`.\n- После `successUpdate` → `USER_UPDATE_RESET` + redirect на `/admin/userlist`.\n- **Двойной диспатч в action:** `USER_UPDATE_SUCCESS` + `USER_DETAILS_SUCCESS` (обновляет кешированные данные) + `USER_DETAILS_RESET`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 38
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/users/:id` — private + admin, response: user без пароля (`.select('-password')`).\n- `PUT /api/users/:id` — private + admin, body: `{ name, email, isAdmin }`, response: `{ _id, name, email, isAdmin }`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 39
+  },
+  {
+    "text": "### Edge cases\n- Email можно изменить на уже существующий → MongoDB unique index вернёт ошибку → HTTP 500 (не обработано как 400).\n- `isAdmin` можно установить через UI — нет дополнительной верификации.\n- Нет смены пароля через admin-редактирование (поле password отсутствует в форме).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 40
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: User model, Admin auth.\n- Изменение `isAdmin` влияет на: доступ к admin-панели через Header, API middleware `admin`.\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 41
+  },
+  {
+    "text": "### Назначение\nУдаление аккаунта пользователя из системы. Все заказы пользователя остаются в БД (нет cascade delete). Persona: администратор.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 42
+  },
+  {
+    "text": "### Технический impl\n- **Action:** `deleteUser(id)` → DELETE `/api/users/:id` с Bearer token.\n- **Controller:** `User.findById(req.params.id)` → `user.remove()`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 43
+  },
+  {
+    "text": "### API endpoints\n- `DELETE /api/users/:id` — private + admin, response: `{ message: 'User removed' }`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 44
+  },
+  {
+    "text": "### Edge cases\n- Удалённый пользователь: его заказы остаются (FK не каскадируется). В OrderScreen populate(`'user', 'name email'`) вернёт null → `order.user && order.user.name` в OrderListScreen защищает от краша.\n- Admin удаляет себя → следующий запрос с его токеном вернёт 401 (User не найден в protect middleware).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 45
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: User model, Admin auth.\n- Связанные Orders: не удаляются, могут показывать null для user.\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 46
+  },
+  {
+    "text": "### Назначение\nТаблица всех заказов в системе с информацией о пользователе, дате, сумме, статусе оплаты и доставки. Persona: администратор, отслеживающий все транзакции.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 47
+  },
+  {
+    "text": "### User flow\n1. Admin → `/admin/orderlist` (Admin → Orders).\n2. Таблица: ID, USER (имя), DATE, TOTAL, PAID, DELIVERED, кнопка Details.\n3. Клик «Details» → `/order/:id`.\n4. На странице заказа admin видит кнопку «Mark As Delivered».",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 48
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `OrderListScreen.js` — guard `userInfo.isAdmin`.\n- **Action:** `listOrders()` → GET `/api/orders`.\n- **Reducer:** `orderListReducer` — `{ orders, loading, error }`.\n- **Controller:** `getOrders` — `Order.find({}).populate('user', 'id name')`.\n- PAID column: дата если оплачен, иначе `fa-times` красная.\n- DELIVERED column: аналогично.\n- `order.user && order.user.name` — null-safe для удалённых пользователей.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 49
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/orders` — private + admin, response: массив всех заказов с populated user (id + name).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 50
+  },
+  {
+    "text": "### Edge cases\n- Очень много заказов → бесконечная таблица (нет пагинации в admin order list — в отличие от product list).\n- `order.paidAt.substring(0, 10)` — вызывается только при `order.isPaid` (ternary защищает).\n- `order.user` может быть null если пользователь удалён → `order.user && order.user.name` отображает undefined (пустая ячейка).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 51
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Order model, Auth + admin, User model (через populate).\n- Ссылается на: Order Detail (Feature 10).\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 52
+  },
+  {
+    "text": "### Назначение\nАдминистратор помечает заказ доставленным — устанавливает `isDelivered=true` и `deliveredAt=Date.now()`. Кнопка видна только для оплаченных и ещё не доставленных заказов. Persona: администратор, обрабатывающий выполненные заказы.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 53
+  },
+  {
+    "text": "### User flow\n1. Admin открывает OrderScreen для оплаченного заказа.\n2. Внизу summary card — кнопка «Mark As Delivered».\n3. Клик → `dispatch(deliverOrder(order))`.\n4. После успеха → страница обновляется с `\"Delivered on [date]\"`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 54
+  },
+  {
+    "text": "### Технический impl\n- **Условие рендера кнопки:**\n  ```jsx\n  {userInfo && userInfo.isAdmin && order.isPaid && !order.isDelivered && (\n    <Button onClick={deliverHandler}>Mark As Delivered</Button>\n  )}\n  ```\n- **Action:** `deliverOrder(order)` → PUT `/api/orders/:id/deliver` (пустой body `{}`).\n- **Reducer:** `orderDeliverReducer` — `{ loading: loadingDeliver, success: successDeliver }`.\n- **Controller:** `updateOrderToDelivered`:\n  ```js\n  order.isDelivered = true\n  order.deliveredAt = Date.now()\n  const updatedOrder = await order.save()\n  ```\n- После `successDeliver` → `useEffect` сбрасывает `ORDER_DELIVER_RESET` + `getOrderDetails`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 55
+  },
+  {
+    "text": "### API endpoints\n- `PUT /api/orders/:id/deliver` — private + admin, body: `{}`, response: обновлённый order.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 56
+  },
+  {
+    "text": "### Edge cases\n- Нет undo — доставку нельзя отменить через UI.\n- Кнопка скрыта при `!order.isPaid` — нельзя пометить как доставлено до оплаты.\n- `loadingDeliver && <Loader />` показывается пока запрос в процессе.\n- Route типизирован как GET в контроллере-комментарии (`@route GET`), но в роутере — `PUT` (несоответствие в документации кода).",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 57
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Order model, Admin auth, Payment (isPaid должен быть true).\n- Влияет на: Order History (deliveredAt показывается в профиле), Admin Order List.\n\n---",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 58
+  },
+  {
+    "text": "### Назначение\nЗагрузка изображения товара через форму на клиенте — сохраняется в папку `uploads/` на сервере. Возвращает путь к файлу, который записывается в поле `image`. Persona: контент-менеджер, добавляющий фото товара.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 59
+  },
+  {
+    "text": "### User flow\n1. На странице редактирования товара — поле Image: текстовый input + file picker.\n2. Admin кликает «Choose File», выбирает JPG/JPEG/PNG.\n3. Немедленно (onChange) → `uploadFileHandler` отправляет файл.\n4. Показывается Loader (`uploading=true`).\n5. Сервер возвращает путь `/uploads/image-1234567890.jpg`.\n6. `setImage(data)` — обновляет input поля Image.\n7. Admin видит путь в поле, может продолжить редактирование.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 60
+  },
+  {
+    "text": "### Технический impl\n- **Handler в ProductEditScreen:**\n  ```js\n  const uploadFileHandler = async (e) => {\n    const file = e.target.files[0]\n    const formData = new FormData()\n    formData.append('image', file)\n    setUploading(true)\n    const { data } = await axios.post('/api/upload', formData, config)\n    setImage(data)\n    setUploading(false)\n  }\n  ```\n- **Route:** `uploadRoutes.js` — `POST /api/upload` — `protect, admin, multer.single('image')`.\n- **Multer config:**\n  - `destination`: `uploads/` папка.\n  - `filename`: `${file.fieldname}-${Date.now()}${ext}` (например `image-1714211234567.jpg`).\n  - `fileFilter`: проверяет расширение (`.jpg`, `.jpeg`, `.png`) И MIME-тип (`image/jpeg`, `image/png`).\n  - `limits.fileSize`: 2MB (2 * 1024 * 1024 bytes).\n- **Response:** строка-путь `/${req.file.path}` (например `/uploads/image-123.jpg`).\n- **Static serving:** `server.js` — `app.use('/uploads', express.static(path.join(__dirname, '/uploads')))`.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 61
+  },
+  {
+    "text": "### API endpoints\n- `POST /api/upload` — private + admin, Content-Type: multipart/form-data, field name: `image`, response: строка пути, HTTP 200.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 62
+  },
+  {
+    "text": "### Edge cases\n- Файл > 2MB → multer возвращает ошибку → `uploadFileHandler` catch → `setUploading(false)`, ошибка только в console (нет UI-отображения upload error).\n- Неподдерживаемый тип (GIF, WebP) → `fileFilter` возвращает ошибку `\"Images only (jpg, jpeg, png)\"` → то же поведение.\n- Двойная проверка: расширение + MIME — защищает от переименования файла с подменой расширения.\n- Файлы не удаляются при удалении товара — накапливаются в `uploads/`.\n- В `uploadFileHandler` токен получается из `store.getState()` напрямую — нестандартный паттерн (обычно через useSelector).\n- `Form.File` (Bootstrap 4 API) — устаревший компонент в React Bootstrap v2.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 63
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `multer` npm package, `uploads/` папка на сервере, Admin auth.\n- Результат используется в: Product model `image` field, публичный каталог, детальная страница.",
+    "source": "features/admin.md",
+    "category": "core",
+    "title": "Admin Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 64
+  }
+]

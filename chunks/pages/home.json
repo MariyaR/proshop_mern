@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Route\n`/` (root), `/search/:keyword`, `/page/:pageNumber`, `/search/:keyword/page/:pageNumber`",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "Route",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nThe home page displays a paginated grid of products available in the store. At the top, a product carousel showcases featured items (only shown when not searching). The page includes a heading \"Latest Products\" and a responsive grid layout that adjusts from 1 column on mobile to 4 columns on extra-large screens.\n\nWhen a search is active, a \"Go Back\" button appears above the product list to allow users to return to browsing all products. Pagination controls appear at the bottom when there are multiple pages of results.",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `productList` slice: `loading`, `error`, `products` array, `page` (current), `pages` (total)",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount/param change**: `GET /api/products?keyword=[keyword]&pageNumber=[pageNumber]` via `listProducts()` action\n- Returns paginated product data",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **ProductCarousel** – featured products carousel (shown only on homepage, not search results)\n- **Product** – reusable product card component (name, image, rating, price)\n- **Message** – error message display\n- **Loader** – loading spinner\n- **Paginate** – pagination controls for page navigation",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Click product card**: Navigate to product details page\n- **Click \"Go Back\"**: Return to home from search\n- **Click page number**: Navigate to specific page of results\n- **Search**: Triggered from Header, navigates to `/search/:keyword`",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- Empty search results: Still shows grid layout with no products\n- Loading state: Displays spinner, replaces product grid\n- API error: Shows red error message, disables pagination\n- Missing keyword parameter: Defaults to showing all products\n- Page number out of bounds: API returns empty array gracefully",
+    "source": "pages/home.md",
+    "category": "core",
+    "title": "Home Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

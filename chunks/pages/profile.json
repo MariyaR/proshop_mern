@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAuthenticated users only. Redirects to login if not authenticated.",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA two-column layout: left side contains a profile edit form (name, email, password fields) with an \"Update\" button and status messages; right side displays a \"My Orders\" table listing all orders placed by the user with columns for ID, date, total price, payment status, delivery status, and a \"Details\" button.",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `userDetails` slice: `loading`, `error`, `user` object (name, email, _id)\n- `userLogin` slice: `userInfo` (used for access control)\n- `userUpdateProfile` slice: `success` flag and loading/error states\n- `orderListMy` slice: `loading`, `error`, `orders` array",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount**: `GET /api/users/profile` via `getUserDetails('profile')` to fetch user data\n- **On mount**: `GET /api/orders/myorders` via `listMyOrders()` to fetch user's orders\n- **On form submit**: `PUT /api/users/profile` with `{ id, name, email, password }` via `updateUserProfile()` action",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **Form** (Bootstrap) – editable profile fields\n- **Table** (Bootstrap) – responsive orders table\n- **Message** – status messages (validation error, success, API error)\n- **Loader** – loading spinner for initial data fetch and form submission\n- **Button** (LinkContainer) – \"Details\" button linking to individual order",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Edit name or email**: Updates local state\n- **Enter new password**: Validates confirmation match before submitting\n- **Click \"Update\"**: Submits updated profile to backend (only if passwords match)\n- **Click \"Details\"**: Navigates to `/order/:id` to view order details",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- Passwords don't match: Local validation message, form not submitted\n- User not authenticated: Redirected to login (check in useEffect)\n- Empty password field: Treated as no password change (backend logic)\n- Profile update success: Message displayed, form remains editable\n- Orders table empty: Shows empty table with no rows\n- Order status: isPaid and isDelivered shown as date or red X icon\n- Loading initial data: Both sections show spinners\n- API error on orders fetch: Error message shown, orders table hidden",
+    "source": "pages/profile.md",
+    "category": "core",
+    "title": "User Profile Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

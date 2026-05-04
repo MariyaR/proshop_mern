@@ -1,0 +1,66 @@
+[
+  {
+    "text": "# Incident i-001: PayPal Sandbox Webhook Double-Charge\n\n**Severity:** P1 (production financial impact)\n**Status:** Resolved\n**Date detected:** 2023-11-04\n**Date resolved:** 2023-11-06\n**Duration:** ~38 hours (detection to full resolution)\n**Author:** On-call Engineer (incident commander)\n**Reviewed by:** Engineering team — postmortem meeting 2023-11-08\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Summary\n\nA subset of orders placed via PayPal were being marked as paid twice in the database, resulting in duplicate `paymentResult` documents and — in three cases — inventory being decremented twice for the same order. No customer was charged twice (PayPal correctly processed each payment once); the duplication was internal to the application layer. The root cause was a race condition triggered by PayPal sandbox's non-standard behavior of firing the `onApprove` callback twice on certain network conditions.\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Summary",
+    "chunk_index": 1
+  },
+  {
+    "text": "## Timeline\n\nAll times UTC.\n\n| Time | Event |\n|------|-------|\n| 2023-11-03 21:14 | PayPal sandbox receives payment for order `63c4a...` (test environment) |\n| 2023-11-03 21:14:02 | First `onApprove` callback fires; backend marks order paid, decrements stock |\n| 2023-11-03 21:14:04 | Second `onApprove` fires (2-second jitter from PayPal sandbox retry logic) |\n| 2023-11-03 21:14:04 | Backend processes second callback; order updated again, stock decremented again |\n| 2023-11-04 09:30 | QA Engineer notices `countInStock` for \"Airpods Wireless Bluetooth Headphones\" shows -1 in admin panel |\n| 2023-11-04 09:45 | On-call Engineer begins investigation |\n| 2023-11-04 11:00 | Root cause identified: no idempotency check on `PUT /api/orders/:id/pay` |\n| 2023-11-04 14:00 | Fix deployed to staging, manually tested across 15 sandbox transactions |\n| 2023-11-05 10:00 | Fix deployed to production |\n| 2023-11-06 08:00 | Monitoring confirmed no recurrence over 22-hour observation window |\n| 2023-11-08 14:00 | Postmortem meeting |\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Timeline",
+    "chunk_index": 2
+  },
+  {
+    "text": "## Impact\n\n- **Orders affected:** 7 orders in the database with duplicate `paymentResult` entries\n- **Inventory affected:** 3 products with `countInStock` decremented below true value (including one at -1)\n- **Customer impact:** Zero. No customer was double-charged. PayPal's own idempotency layer prevented duplicate financial transactions.\n- **Revenue impact:** None.\n- **Trust impact:** Low (internal only; no external visibility).\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Impact",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Root Cause Analysis\n\nThe `@paypal/react-paypal-js` SDK fires the `onApprove` callback when PayPal confirms payment authorization. The application's `onApprove` handler called `payOrder(orderId, paymentResult)` which made a PUT request to `/api/orders/:id/pay`.\n\nThe backend handler at that time was:\n\n```javascript\nconst payOrder = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n  order.isPaid = true;\n  order.paidAt = Date.now();\n  order.paymentResult = { ... };\n  const updatedOrder = await order.save();\n  res.json(updatedOrder);\n});\n```\n\nNo check was made to see if the order was already marked as paid before writing. PayPal's sandbox environment, unlike production, occasionally fires `onApprove` twice for a single authorization event — a known quirk documented in PayPal's developer forums but not in the primary SDK documentation. The second callback arrived 2 seconds after the first, which was enough time for the first database write to complete, meaning both callbacks received a `200 OK` and each triggered a separate stock decrement via a Mongoose `pre('save')` middleware hook.\n\n**Contributing factors:**\n1. No idempotency guard on the pay endpoint.\n2. Stock decrement was a side effect in a Mongoose middleware hook, not an explicit step with a guard condition.\n3. The sandbox testing protocol did not cover the double-callback scenario.\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Root Cause Analysis",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Resolution\n\nA guard was added to the backend handler:\n\n```javascript\nconst payOrder = asyncHandler(async (req, res) => {\n  const order = await Order.findById(req.params.id);\n  if (order.isPaid) {\n    res.status(200).json(order); // idempotent: already paid, return current state\n    return;\n  }\n  order.isPaid = true;\n  order.paidAt = Date.now();\n  order.paymentResult = { ... };\n  const updatedOrder = await order.save();\n  res.json(updatedOrder);\n});\n```\n\nThe stock decrement middleware was also updated to check `isModified('isPaid')` and `!this.isPaid` (the previous value) before decrementing, making it safe to call multiple times.\n\nAffected inventory records were corrected manually by the on-call engineer after verifying actual order counts.\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Resolution",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Postmortem — Action Items\n\n| Action | Owner | Status | Due |\n|--------|-------|--------|-----|\n| Add idempotency check to `/api/orders/:id/pay` | Engineer A | Done | 2023-11-05 |\n| Add guard to stock decrement middleware | Engineer A | Done | 2023-11-05 |\n| Add sandbox regression test: simulate double `onApprove` | Engineer B | Done | 2023-11-15 |\n| Document PayPal sandbox double-callback behavior in project wiki | Tech Lead | Done | 2023-11-10 |\n| Review all other mutation endpoints for idempotency gaps | Engineer B | Done | 2023-11-22 |\n| Monitor production for 60 days before switching PayPal sandbox → production credentials | Tech Lead | Done (2024-10-07, v2.3) | 2024-01-05 |\n\n---",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Postmortem — Action Items",
+    "chunk_index": 6
+  },
+  {
+    "text": "## Lessons\n\n**PayPal sandbox does not faithfully replicate production behavior.** The double-callback occurs in sandbox due to sandbox infrastructure retry logic that does not occur (or occurs far less frequently) in production PayPal. This means a bug class exists that can only be reliably reproduced in sandbox, making fix verification uncertain. This experience is one of the primary reasons Stripe is preferred for new projects (see ADR-004).\n\n**Side effects in Mongoose middleware hooks are hard to reason about.** The stock decrement as a `pre('save')` hook felt elegant but created invisible coupling between the payment flow and the inventory system. Moving it to an explicit controller step made the flow auditable and testable.\n\n**Idempotency on financial endpoints is non-negotiable.** Any endpoint that records a payment, transfers value, or affects inventory should be idempotent by design, not bolted on after an incident.",
+    "source": "incidents/i-001-paypal-double-charge.md",
+    "category": "core",
+    "title": "Incident i-001: PayPal Sandbox Webhook Double-Charge",
+    "section": "Lessons",
+    "chunk_index": 7
+  }
+]

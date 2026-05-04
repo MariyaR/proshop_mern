@@ -1,0 +1,346 @@
+[
+  {
+    "text": "# ProShop MERN E-Commerce Glossary\n\n**Purpose:** Define key domain, technical, operational, and business terms used in the proshop-mern project.  \n**Scope:** All domains covered by M3 curriculum.  \n**Update frequency:** As new features are added.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "### Customer\nA user registered in the system who can browse products, add items to cart, and place orders. Customers have authentication credentials (email/password) and order history. Related: User, Account.\n\n**In proshop:** Stored in MongoDB `users` collection with `isAdmin: false`. Example: john@example.com.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Customer",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Product\nA physical or digital good offered for sale, with a unique price, description, inventory count, and reviews. Products are created and managed by admin users. A product always has a category, brand, and in-stock count.\n\n**In proshop:** `Product` model with fields: `name`, `price`, `countInStock`, `category`, `brand`, `description`, `reviews[]`, `rating`, `numReviews`. Accessible via `/api/products` endpoint.\n\n**Example:**\n```json\n{\n  \"_id\": \"60d5ec49c1234567890abcde\",\n  \"name\": \"iPhone 15 Pro\",\n  \"price\": 999.99,\n  \"countInStock\": 15,\n  \"category\": \"Electronics\",\n  \"brand\": \"Apple\",\n  \"rating\": 4.8,\n  \"numReviews\": 42\n}\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Product",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Order\nA confirmed purchase by a customer containing one or more order items, shipping address, payment method, and totals (tax, shipping, total). Orders track payment status (`isPaid`, `paidAt`) and delivery status (`isDelivered`, `deliveredAt`).\n\n**In proshop:** `Order` model with `user` reference, `orderItems[]`, `shippingAddress`, `paymentMethod`, `totalPrice`, `isPaid`, `isDelivered`. Once an order is placed, inventory is decremented (if implemented).\n\n**Lifecycle:** Created → Awaiting payment → Paid → Shipped → Delivered.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Order",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Order Item\nA single line-item in an order, representing one product with a quantity, price at time of purchase, and product reference. Order items are immutable snapshots—if product price changes later, the order item keeps the original price.\n\n**In proshop:** Embedded in `Order.orderItems[]` with fields: `product` (ObjectId ref), `name`, `qty`, `price`, `image`.\n\n**Example:**\n```json\n{\n  \"product\": \"60d5ec49c1234567890abcde\",\n  \"name\": \"iPhone 15 Pro\",\n  \"qty\": 2,\n  \"price\": 999.99,\n  \"image\": \"/images/iphone15.jpg\"\n}\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Order Item",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Cart\nTemporary collection of products selected by a customer but not yet ordered. Carts exist client-side (Redux state) and are not persisted to database in proshop v1. When checkout completes, cart items become order items.\n\n**In proshop:** Managed in Redux (`frontend/src/slices/cartSlice.js`). Has `cartItems[]`, `itemsPrice`, `shippingPrice`, `taxPrice`, `totalPrice`.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Cart",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Checkout\nMulti-step process where customers provide shipping address, payment method, and review before finalizing an order. Typically 2–4 steps depending on design (e.g., Address → Payment → Review → Confirm).\n\n**In proshop:** Implemented as multi-screen flow in `frontend/src/screens/CheckoutScreen.jsx` (or similar). Backend validates order via `/api/orders` POST endpoint.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Checkout",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Review\nUser-submitted feedback on a product, containing a rating (1–5 stars), comment text, and author (customer). Reviews influence product's aggregate `rating` and `numReviews` count.\n\n**In proshop:** Embedded in `Product.reviews[]` with fields: `rating`, `comment`, `user` (ObjectId ref), `name`, `createdAt`. Submitted via `POST /api/products/:id/reviews`.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Review",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Rating\nNumeric score (0–5 stars) aggregating all reviews for a product. Calculated as mean of all individual review ratings. Updated when a review is added.\n\n**In proshop:** Stored on product as `rating` (float) and `numReviews` (count). Both updated when new review is created.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Rating",
+    "chunk_index": 8
+  },
+  {
+    "text": "### Wishlist (Optional)\nPersonal list of products a customer wants to purchase later. Not fully implemented in base proshop but could be added as a feature.\n\n**Related term:** Bookmark, Save for later.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Wishlist (Optional)",
+    "chunk_index": 9
+  },
+  {
+    "text": "### JWT (JSON Web Token)\nStateless authentication token containing encoded user info (ID, role, email). Sent in request headers for authorization. Server verifies token signature to ensure authenticity.\n\n**In proshop:** Issued on login (`POST /api/users/login`). Token contains `userId` and `isAdmin`. Verified by `protect` middleware. Example header: `Authorization: Bearer eyJhbGc...`\n\n**Security note:** Never expose `JWT_SECRET` in code. Rotate for production.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "JWT (JSON Web Token)",
+    "chunk_index": 10
+  },
+  {
+    "text": "### bcrypt\nCryptographic library for hashing passwords. Bcrypt is slow-by-design, making brute-force attacks infeasible. Passwords are hashed with salt; two identical passwords produce different hashes.\n\n**In proshop:** Used in `User` model's `pre('save')` hook. Plain-text password → bcrypt.hash() → stored hash. Login verifies via `matchPassword()` method.\n\n**Example:**\n```javascript\n// Register: password \"123456\" becomes \"$2a$10$...\"\nuserSchema.pre('save', async function (next) {\n  const salt = await bcrypt.genSalt(10)\n  this.password = await bcrypt.hash(this.password, salt)\n})\n\n// Login: compare entered password with stored hash\nconst isMatch = await user.matchPassword(enteredPassword)\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "bcrypt",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Mongoose\nObject-Document Mapper (ODM) for MongoDB in Node.js. Provides schema validation, type coercion, and middleware hooks. Makes MongoDB queries more structured and less error-prone.\n\n**In proshop:** Models defined as `userSchema`, `productSchema`, `orderSchema`. Each schema maps to a MongoDB collection. `Model.findById()`, `Model.save()`, `Model.deleteMany()` are ORM methods.\n\n**Example:**\n```javascript\n// Define schema\nconst userSchema = new mongoose.Schema({ email: String, password: String })\n// Create model\nconst User = mongoose.model('User', userSchema)\n// Query\nconst user = await User.findById(userId)\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Mongoose",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Express Middleware\nFunction that intercepts HTTP requests/responses. Middleware can log, authenticate, validate, or transform data before passing to next handler.\n\n**In proshop:** Examples: `protect` (JWT verification), `admin` (role check), `errorHandler` (catch errors).\n\n**Example:**\n```javascript\nexport const protect = async (req, res, next) => {\n  const token = req.headers.authorization?.split(' ')[1]\n  if (!token) return res.status(401).json({ error: 'No token' })\n  const decoded = jwt.verify(token, process.env.JWT_SECRET)\n  req.user = await User.findById(decoded.id)\n  next()\n}\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Express Middleware",
+    "chunk_index": 13
+  },
+  {
+    "text": "### REST Endpoint\nHTTP endpoint following REST conventions: `GET /api/products` (list), `POST /api/products` (create), `PUT /api/products/:id` (update), `DELETE /api/products/:id` (delete).\n\n**In proshop:** All routes follow REST:\n- `GET /api/products` → list all products.\n- `GET /api/products/:id` → get one product.\n- `POST /api/orders` → create order.\n- `PUT /api/orders/:id/pay` → mark order as paid.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "REST Endpoint",
+    "chunk_index": 14
+  },
+  {
+    "text": "### ObjectId\nMongoDB's native unique identifier format (12-byte hex string like `\"60d5ec49c1234567890abcde\"`). Used as primary key for every document.\n\n**In proshop:** Every document has `_id` field (ObjectId). Foreign keys use ObjectId refs. Example: `Order.user` = ObjectId of the customer.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "ObjectId",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Virtual Field\nMongoose computed field not stored in database. Calculated on-the-fly from other fields. Useful for derived data.\n\n**In proshop:** Could add virtual like `product.totalReviewScore = reviews.length * avgRating` (not stored, computed when accessed).\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Virtual Field",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Populate (Reference Resolution)\nMongoose method to replace a reference (ObjectId) with the actual document. Called `populate()` on queries.\n\n**In proshop:** When fetching an order, `populate('user')` replaces the user ObjectId with the full user document.\n\n**Example:**\n```javascript\n// Without populate: order.user = \"60d5ec49...\"\n// With populate: order.user = { _id: \"60d5ec49...\", name: \"John\", email: \"john@example.com\" }\nconst order = await Order.findById(orderId).populate('user').populate('orderItems.product')\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Populate (Reference Resolution)",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Async Handler\nWrapper for async route handlers that catches errors and passes to error middleware. Prevents unhandled promise rejections.\n\n**In proshop:** Imported as `express-async-handler`. Wraps controllers:\n```javascript\nimport asyncHandler from 'express-async-handler'\n\nrouter.get('/', asyncHandler(async (req, res) => {\n  const products = await Product.find()\n  res.json(products)\n}))\n```\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Async Handler",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Feature Flag\nBoolean or percentage-based toggle that enables/disables code path without redeployment. Used for canary deployments, A/B testing, and emergency kill switches.\n\n**In proshop:** Example flag `new_search_filter` with `enabled: true/false` and optional `rolloutPercentage: 0–100`. Checked at runtime in controller:\n```javascript\nif (featureFlags.new_search_filter?.enabled) {\n  // new code path\n} else {\n  // old code path\n}\n```\n\n**Use case:** Safely roll out checkout redesign to 5% of users, monitor, expand to 100%.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Feature Flag",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Canary Deployment\nGradual rollout of new code to subset of users (5% → 25% → 50% → 100%) to catch bugs early without affecting all users.\n\n**In proshop:** Implemented via feature flag's `rolloutPercentage`. Start at 5% for 1–2 hours, watch metrics, expand if stable.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Canary Deployment",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Rollback\nRevert to previous code version (git revert or Heroku release rollback). Fastest way to stop a broken deploy from harming users.\n\n**In proshop:** `heroku releases:rollback v20` reverts to release 20 in <1 minute. No code change needed.\n\n**When to use:** Incident detected within 5 minutes of deploy.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Rollback",
+    "chunk_index": 21
+  },
+  {
+    "text": "### Blue-Green Deployment\nStrategy where two identical production environments (blue=current, green=new) run in parallel. Switch traffic from blue to green once green is verified. Allows instant rollback.\n\n**In proshop:** Not currently implemented (Heroku doesn't natively support blue-green). Could be added with load balancer + multiple dynos.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Blue-Green Deployment",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Health Check\nSimple endpoint or query to verify service is running and responsive. Used for monitoring and automated restarts.\n\n**In proshop:** Could implement `GET /api/health` returning `{ status: \"OK\", uptime: 3600 }`. Monitored every 30 seconds.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Health Check",
+    "chunk_index": 23
+  },
+  {
+    "text": "### Dead Letter Queue (DLQ)\nMessage queue for failed/unprocessable messages. Prevents infinite retries of bad data and preserves data for analysis.\n\n**In proshop:** Not currently used. If emails fail, they could go to DLQ instead of being retried infinitely.\n\n**Concept:** Order confirmation email fails → message moved to DLQ → manual review later.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Dead Letter Queue (DLQ)",
+    "chunk_index": 24
+  },
+  {
+    "text": "### SLA (Service Level Agreement)\nCommitment to uptime/performance. Example: \"99.9% uptime\" = max 43 minutes downtime/month.\n\n**In proshop:** Hypothetical SLA: 99% uptime, P95 latency < 1 second, checkout success rate > 99.5%.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "SLA (Service Level Agreement)",
+    "chunk_index": 25
+  },
+  {
+    "text": "### SLO (Service Level Objective)\nInternal target stricter than SLA. Example: SLA is 99% uptime; SLO is 99.5% (buffer for incidents).\n\n**In proshop:** SLO: 99.5% uptime, P99 latency < 2 seconds (more aggressive than SLA to catch issues early).\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "SLO (Service Level Objective)",
+    "chunk_index": 26
+  },
+  {
+    "text": "### P95 Latency\nResponse time where 95% of requests complete faster. Measures typical user experience (ignores slow outliers).\n\n**In proshop:** \"P95 latency is 800ms\" = 95% of requests complete in <800ms, 5% take longer. If P95 suddenly spikes to 5000ms, incident likely.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "P95 Latency",
+    "chunk_index": 27
+  },
+  {
+    "text": "### AOV (Average Order Value)\nTotal revenue divided by number of orders. Indicator of purchase size and monetization.\n\n**In proshop:** If 1000 orders totaled $45,000, AOV = $45. Goal: increase AOV through upsells, bundles, etc.\n\n**Formula:** `AOV = Total Revenue / Total Orders`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "AOV (Average Order Value)",
+    "chunk_index": 28
+  },
+  {
+    "text": "### GMV (Gross Merchandise Value)\nTotal value of orders placed (before refunds, cancellations). Gross measure of platform activity.\n\n**In proshop:** If 1000 orders placed with AOV $45, GMV = $45,000. Higher GMV = healthier business.\n\n**Formula:** `GMV = Number of Orders × Average Order Value`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "GMV (Gross Merchandise Value)",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Conversion Rate\nPercentage of visitors who complete a purchase. Critical metric for e-commerce health.\n\n**In proshop:** If 10,000 users visit, 300 place orders, conversion rate = 3%. Industry avg: 1–3%.\n\n**Formula:** `Conversion Rate = Orders / Visitors × 100%`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Conversion Rate",
+    "chunk_index": 30
+  },
+  {
+    "text": "### Cart Abandonment Rate\nPercentage of shopping carts created but not converted to orders. Indicates friction in checkout.\n\n**In proshop:** If 5000 carts created but only 1500 complete checkout, abandonment = 70%. High abandonment suggests checkout is too complex or too many payment options failing.\n\n**Formula:** `Cart Abandonment = (Carts Created - Orders Completed) / Carts Created × 100%`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Cart Abandonment Rate",
+    "chunk_index": 31
+  },
+  {
+    "text": "### Repeat Purchase Rate\nPercentage of customers who buy more than once. Indicator of customer satisfaction and retention.\n\n**In proshop:** If 1000 customers exist and 200 placed 2+ orders, repeat rate = 20%. Goal: >30% indicates healthy business.\n\n**Formula:** `Repeat Rate = Repeat Customers / Total Customers × 100%`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Repeat Purchase Rate",
+    "chunk_index": 32
+  },
+  {
+    "text": "### NPS (Net Promoter Score)\nSurvey metric measuring customer loyalty. Customers rate \"likelihood to recommend\" 0–10. Detractors (0–6) subtract from Promoters (9–10).\n\n**In proshop:** Could add post-checkout survey. Example: 50% Promoters, 10% Detractors = NPS = 40. Target: >50 is healthy.\n\n**Formula:** `NPS = % Promoters - % Detractors`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "NPS (Net Promoter Score)",
+    "chunk_index": 33
+  },
+  {
+    "text": "### Churn Rate\nPercentage of customers who stop using service in a period. Opposite of retention.\n\n**In proshop:** If 1000 active customers last month, 50 never return, churn = 5%. High churn = problem with product/service.\n\n**Formula:** `Churn = Lost Customers / Starting Customers × 100%`\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Churn Rate",
+    "chunk_index": 34
+  },
+  {
+    "text": "### Environment Variables\nConfiguration passed at runtime (not hardcoded). Examples: `NODE_ENV`, `MONGO_URI`, `JWT_SECRET`, `PAYPAL_CLIENT_ID`.\n\n**In proshop:** Stored in `.env` (local) or Heroku config vars (production). Always `.env` is gitignored for security.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Environment Variables",
+    "chunk_index": 35
+  },
+  {
+    "text": "### Node.js\nJavaScript runtime for server-side code. Allows JavaScript to run outside browser. Event-driven, non-blocking I/O.\n\n**In proshop:** Backend runs on Node.js v14+. `npm start` launches Node.js process running `backend/server.js`.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Node.js",
+    "chunk_index": 36
+  },
+  {
+    "text": "### npm (Node Package Manager)\nJavaScript package manager. `npm install` pulls dependencies from registry. `package.json` lists all dependencies.\n\n**In proshop:** `npm install` downloads 50+ packages (express, mongoose, bcryptjs, etc.).\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "npm (Node Package Manager)",
+    "chunk_index": 37
+  },
+  {
+    "text": "### Docker\nContainerization platform. `docker compose up` starts containers (MongoDB) without installing MongoDB locally.\n\n**In proshop:** `npm run mongo:up` = `docker compose up -d mongo` = starts MongoDB in isolated container. Same image everywhere (dev, staging, prod).\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Docker",
+    "chunk_index": 38
+  },
+  {
+    "text": "### Heroku\nPlatform-as-a-Service (PaaS) for hosting Node.js/Python/Go apps. Handles deployment, scaling, and infrastructure.\n\n**In proshop:** `git push heroku main` deploys code. Heroku builds Docker image, runs `npm install`, executes `heroku-postbuild` script, starts dyno.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Heroku",
+    "chunk_index": 39
+  },
+  {
+    "text": "### Idempotent\nOperation that produces same result if run multiple times. Safe to retry.\n\n**In proshop:** `npm run data:import` is idempotent—running twice is safe (seed script deletes then recreates data). Non-idempotent: `POST /api/orders` without check—running twice creates 2 orders.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Idempotent",
+    "chunk_index": 40
+  },
+  {
+    "text": "### Atomicity\nDatabase guarantee that operation completes fully or not at all. No partial updates.\n\n**In proshop:** If order creation involves: 1) create order, 2) decrement inventory, 3) charge payment, all three must succeed or all rollback. MongoDB transactions ensure atomicity.\n\n---",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Atomicity",
+    "chunk_index": 41
+  },
+  {
+    "text": "## Useful Links\n\n- **Mongoose docs:** https://mongoosejs.com/\n- **Express docs:** https://expressjs.com/\n- **JWT intro:** https://jwt.io/introduction\n- **bcrypt guide:** https://auth0.com/blog/hashing-in-action-understanding-bcrypt/\n- **MongoDB docs:** https://docs.mongodb.com/\n- **Heroku deployment:** https://devcenter.heroku.com/articles/getting-started-with-nodejs\n\n---\n\n**Last updated:** M3 curriculum.  \n**Maintainers:** Course instructors.  \n**Contributing:** When adding features, update this glossary with new terms and definitions.",
+    "source": "glossary.md",
+    "category": "core",
+    "title": "ProShop MERN E-Commerce Glossary",
+    "section": "Useful Links",
+    "chunk_index": 42
+  }
+]

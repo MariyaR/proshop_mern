@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAdmin users only. Non-admin users and unauthenticated users are redirected to login.",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA form to edit product details with a \"Go Back\" button returning to the products list. The form contains fields: Name, Price, Image (URL text input + file upload), Brand, Count In Stock, Category, and Description (all text inputs). An \"Update\" button submits changes.\n\nBelow the Image URL field is a file input for uploading a new product image. During upload, a loader is shown. On successful update, user is redirected back to the products list.",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `productDetails` slice: `loading`, `error`, `product` object (fetched data)\n- `productUpdate` slice: `loading`, `success`, `error` for update action\n- Local state: `uploading` boolean for file upload status",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount**: `GET /api/products/:id` via `listProductDetails()` action to fetch product data\n- **On form submit**: `PUT /api/products/:id` with product data via `updateProduct()` action\n- **On file upload**: `POST /api/upload` with FormData (multipart) via axios; response is image path/URL\n- **Authorization**: Upload request includes Bearer token from userInfo.token",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **FormContainer** – centered form wrapper\n- **Form** (Bootstrap) – text inputs for all product fields, file input for image upload\n- **Message** – error messages\n- **Loader** – loading spinner during fetch, upload, or update\n- **Button** – submit button and \"Go Back\" navigation button\n- **Form.File** – file input for image upload",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Edit product fields**: Updates local state on input change\n- **Upload image file**: Dispatches multipart POST request; sets image URL on response\n- **Click \"Update\"**: Dispatches updateProduct action with all changed values\n- **Click \"Go Back\"**: Navigates back to `/admin/productlist`",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- User not authenticated: Redirected to login on mount\n- User not admin: Redirected to login on mount\n- Product ID not found: Error message displayed, form hidden\n- Loading initial product data: Spinner shown, form hidden\n- Update error: Error message displayed, form remains editable\n- Successful update: User redirected to products list, state reset\n- Form pre-population: Initial state loaded from fetched product data\n- Image upload error: Error caught, uploading flag set to false, user sees upload attempt failed\n- Image upload success: New image URL set in form, ready to save with next update\n- Price field: Accepts numbers only\n- Count In Stock field: Accepts numbers only\n- Category and Brand: No format validation, accepts any text\n- Store state access: Uses store.getState() to get current userInfo token for upload auth",
+    "source": "pages/admin-product-edit.md",
+    "category": "core",
+    "title": "Admin Product Edit Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

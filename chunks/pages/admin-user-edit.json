@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAdmin users only. Non-admin users and unauthenticated users are redirected to login.",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA form to edit user details with a \"Go Back\" button at the top returning to the users list. The form contains three fields: Name (text input), Email Address (email input), and Is Admin (checkbox). An \"Update\" button submits changes.\n\nOn successful update, user is redirected back to the users list and a success message is briefly shown.",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `userDetails` slice: `loading`, `error`, `user` object (fetched data)\n- `userUpdate` slice: `loading`, `success`, `error` for update action",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount**: `GET /api/users/:id` via `getUserDetails(userId)` action to fetch user data\n- **On form submit**: `PUT /api/users/:id` with `{ _id, name, email, isAdmin }` via `updateUser()` action",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **FormContainer** – centered form wrapper\n- **Form** (Bootstrap) – text inputs for name/email, checkbox for admin status\n- **Message** – error or loading messages\n- **Loader** – loading spinner during fetch or update\n- **Button** – submit button and \"Go Back\" navigation button",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Edit name, email**: Updates local state on input change\n- **Toggle Is Admin checkbox**: Sets isAdmin boolean state\n- **Click \"Update\"**: Dispatches updateUser action with changed values\n- **Click \"Go Back\"**: Navigates back to `/admin/userlist`",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- User not authenticated: Redirected to login on mount\n- User not admin: Redirected to login on mount\n- User ID not found: Error message displayed, form hidden\n- Loading initial user data: Spinner shown, form hidden\n- Update error: Error message displayed, form remains editable\n- Successful update: User redirected to users list, state reset\n- Form pre-population: Initial state loaded from fetched user data\n- Email field: No format validation, accepts any text\n- Name field: Required (no validation), accepts any text",
+    "source": "pages/admin-user-edit.md",
+    "category": "core",
+    "title": "Admin User Edit Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

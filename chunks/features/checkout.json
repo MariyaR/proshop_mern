@@ -1,0 +1,354 @@
+[
+  {
+    "text": "# Checkout Features — ProShop MERN\n\nПокрывает четырёхшаговый checkout flow: адрес доставки → метод оплаты → подтверждение заказа → страница заказа.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Feature 1: Checkout Steps Navigation (Progress Indicator)",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Feature 1: Checkout Steps Navigation (Progress Indicator)",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Назначение\nВизуальный индикатор прогресса из 4 шагов: Sign In → Shipping → Payment → Place Order. Показывает на каком этапе находится пользователь и позволяет вернуться к завершённым шагам. Persona: покупатель в процессе оформления.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `CheckoutSteps.js` — props-флаги `step1`, `step2`, `step3`, `step4` (boolean).\n- Каждый шаг: если флаг `true` → активная ссылка `<LinkContainer>`, если `false` → disabled `<Nav.Link>`.\n- Маппинг:\n  - `step1` = Sign In → `/login`\n  - `step2` = Shipping → `/shipping`\n  - `step3` = Payment → `/payment`\n  - `step4` = Place Order → `/placeorder`\n- **ShippingScreen:** `<CheckoutSteps step1 step2 />` (шаги 1-2 активны).\n- **PaymentScreen:** `<CheckoutSteps step1 step2 step3 />` (шаги 1-3 активны).\n- **PlaceOrderScreen:** `<CheckoutSteps step1 step2 step3 step4 />` (все активны).",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Edge cases\n- Disabled ссылки не кликабельны (Bootstrap Nav.Link disabled).\n- Пользователь может вернуться назад по активным ссылкам — данные сохранены в Redux/localStorage.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: React Bootstrap Nav, React Router LinkContainer.\n- Используется в трёх checkout-экранах.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Назначение\nПервый содержательный шаг checkout — ввод адреса доставки. Данные сохраняются в Redux store и localStorage. Persona: покупатель, оформляющий первый или повторный заказ.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 6
+  },
+  {
+    "text": "### User flow\n1. После входа в систему и перехода по «Proceed To Checkout» → `/shipping`.\n2. Форма предзаполнена из `cart.shippingAddress` (если уже заполнялась ранее).\n3. Пользователь заполняет Address, City, Postal Code, Country.\n4. Кликает «Continue» → данные сохраняются, редирект на `/payment`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `ShippingScreen.js` — 4 state переменные, инициализированы из `useSelector(state => state.cart.shippingAddress)`.\n- **Action:** `saveShippingAddress({ address, city, postalCode, country })`:\n  ```js\n  dispatch({ type: CART_SAVE_SHIPPING_ADDRESS, payload: data })\n  localStorage.setItem('shippingAddress', JSON.stringify(data))\n  ```\n- **Reducer:** `cartReducer` обрабатывает `CART_SAVE_SHIPPING_ADDRESS` → `{ ...state, shippingAddress: action.payload }`.\n- Все поля: `required` attribute в HTML (браузерная валидация).\n- **Guard:** нет явного auth-guard в ShippingScreen — перенаправление на shipping происходит через CartScreen.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 8
+  },
+  {
+    "text": "### API endpoints\n- Нет серверных запросов. Только localStorage + Redux.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Edge cases\n- Пользователь открывает `/shipping` напрямую без логина — ShippingScreen не проверяет `userInfo` → нет редиректа (отсутствие guard — учебный артефакт). При попытке checkout всё равно потребуется логин.\n- Незаполненные required поля → браузер показывает validation tooltip, форма не сабмитится.\n- Длина полей не ограничена — очень длинные строки принимаются.\n- PaymentScreen проверяет `!shippingAddress.address` → редирект назад на `/shipping`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Cart state, Auth (косвенно через CartScreen redirect).\n- PlaceOrderScreen читает `cart.shippingAddress` для отображения и отправки в API.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Назначение\nВторой шаг checkout — выбор способа оплаты (PayPal или Credit Card через PayPal). Выбор сохраняется в Redux и localStorage. Persona: покупатель перед оплатой.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 12
+  },
+  {
+    "text": "### User flow\n1. После заполнения адреса → `/payment`.\n2. Форма с radio-кнопкой «PayPal or Credit Card» (выбрана по умолчанию, `checked` атрибут жёстко задан).\n3. Закомментированный вариант «Stripe» — потенциальное расширение.\n4. Кликает «Continue» → `savePaymentMethod('PayPal')` + редирект на `/placeorder`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `PaymentScreen.js` — state `paymentMethod = 'PayPal'`.\n- **Guard:** `if (!shippingAddress.address) { history.push('/shipping') }` — синхронная проверка без useEffect.\n- **Action:** `savePaymentMethod(data)`:\n  ```js\n  dispatch({ type: CART_SAVE_PAYMENT_METHOD, payload: data })\n  localStorage.setItem('paymentMethod', JSON.stringify(data))\n  ```\n- **Reducer:** `{ ...state, paymentMethod: action.payload }`.\n- Radio input `checked` — жёстко задан, не зависит от state. onChange обновляет state, но UI всегда показывает PayPal как выбранный.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 14
+  },
+  {
+    "text": "### Edge cases\n- `checked` жёстко задан → даже при добавлении Stripe option, UI не переключится корректно без рефакторинга.\n- Синхронный guard (вне useEffect): `if (!shippingAddress.address)` выполняется при каждом рендере — это anti-pattern но работает для данного кейса.\n- PlaceOrderScreen проверяет `!cart.paymentMethod` → редирект на `/payment`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Cart state (shippingAddress для guard).\n- PlaceOrderScreen и OrderScreen используют `paymentMethod` для отображения.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Назначение\nФинальный шаг checkout — полный обзор заказа: адрес доставки, метод оплаты, список товаров, расчёт всех цен. Кнопка «Place Order» создаёт заказ в базе данных. Persona: покупатель, проверяющий перед оплатой.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 17
+  },
+  {
+    "text": "### User flow\n1. После выбора оплаты → `/placeorder`.\n2. Левая колонка: Shipping address, Payment Method, Order Items (список с изображениями).\n3. Правая колонка: Order Summary — Items, Shipping, Tax, Total.\n4. Кликает «Place Order» → POST на сервер.\n5. При успехе → редирект на `/order/:id`, корзина очищается.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `PlaceOrderScreen.js` — двойной guard:\n  ```js\n  if (!cart.shippingAddress.address) { history.push('/shipping') }\n  else if (!cart.paymentMethod) { history.push('/payment') }\n  ```\n- **Цены рассчитываются на фронте:**\n  ```js\n  cart.itemsPrice = addDecimals(cartItems.reduce((acc, item) => acc + item.price * item.qty, 0))\n  cart.shippingPrice = addDecimals(cart.itemsPrice > 100 ? 0 : 100)\n  cart.taxPrice = addDecimals(Number((0.15 * cart.itemsPrice).toFixed(2)))\n  cart.totalPrice = (Number(cart.itemsPrice) + Number(cart.shippingPrice) + Number(cart.taxPrice)).toFixed(2)\n  ```\n- **Action:** `createOrder(orderPayload)` → POST `/api/orders`.\n- **useEffect:** при `success` → `history.push('/order/${order._id}')` + диспатч `USER_DETAILS_RESET` + `ORDER_CREATE_RESET`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 19
+  },
+  {
+    "text": "### API endpoints\n- `POST /api/orders` — private (Bearer token), body:\n  ```json\n  {\n    \"orderItems\": [...],\n    \"shippingAddress\": { \"address\", \"city\", \"postalCode\", \"country\" },\n    \"paymentMethod\": \"PayPal\",\n    \"itemsPrice\": \"XX.XX\",\n    \"shippingPrice\": \"0.00\",\n    \"taxPrice\": \"XX.XX\",\n    \"totalPrice\": \"XX.XX\"\n  }\n  ```\n  Response: созданный order object, HTTP 201.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Edge cases\n- Кнопка `disabled={cart.cartItems === 0}` — тот же баг что в CartScreen: сравнение массива с числом 0 всегда false → кнопка никогда не disabled (учебный артефакт).\n- Цены вычисляются на фронте и отправляются на сервер — сервер не валидирует корректность цен (security issue учебного проекта).\n- `addDecimals` функция: `(Math.round(num * 100) / 100).toFixed(2)` — корректно обрабатывает floating point.\n- После redirect `ORDER_CREATE_RESET` диспатчится для сброса success-флага.\n- `USER_DETAILS_RESET` диспатчится — вероятно для сброса кеша профиля после заказа.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 21
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Cart state (все три части: items + shipping + payment), Auth (token для API).\n- После успеха: корзина очищена (`CART_CLEAR_ITEMS`), переход на Order Detail.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Назначение\nАвтоматический расчёт налога как 15% от стоимости товаров. Вычисляется на фронте в PlaceOrderScreen и отображается в Order Summary. Persona: покупатель, видящий финальную сумму.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 23
+  },
+  {
+    "text": "### Технический impl\n- `cart.taxPrice = addDecimals(Number((0.15 * cart.itemsPrice).toFixed(2)))`\n- Двойное округление: внутри — `.toFixed(2)` перед умножением убирает floating point в `itemsPrice`, снаружи — `addDecimals` = `Math.round * 100 / 100`.\n- Хранится в Order model: `taxPrice: { type: Number, default: 0.0 }`.\n- Отображается на OrderScreen (страница заказа после создания).",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 24
+  },
+  {
+    "text": "### Edge cases\n- Tax rate жёстко задан (15%) — не конфигурируется.\n- `cart.itemsPrice` уже строка `.toFixed(2)` → `0.15 * \"99.90\"` = `0.15 * 99.90` (JS приводит к числу).",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 25
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `cart.itemsPrice`.\n- Используется в: PlaceOrderScreen (расчёт), OrderScreen (отображение хранённого значения).\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 26
+  },
+  {
+    "text": "### Назначение\nРасчёт стоимости доставки: бесплатно при заказе от $100, $100 при заказе до $100. Persona: покупатель, оптимизирующий сумму заказа.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 27
+  },
+  {
+    "text": "### Технический impl\n- `cart.shippingPrice = addDecimals(cart.itemsPrice > 100 ? 0 : 100)`\n- Порог: `> 100` (не `>= 100`) — при ровно $100 доставка платная.\n- Хранится в Order model: `shippingPrice: { type: Number, default: 0.0 }`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 28
+  },
+  {
+    "text": "### Edge cases\n- `cart.itemsPrice` — строка после `addDecimals` → `\"100.00\" > 100` в JS: строка сравнивается с числом, `\"100.00\" > 100` → false → доставка $100 при ровно $100 (неочевидное поведение JavaScript).\n- Доставка не зависит от страны или веса.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `cart.itemsPrice`.\n- Итоговая цена: `itemsPrice + shippingPrice + taxPrice`.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 30
+  },
+  {
+    "text": "## Feature 7: Order Confirmation Page (Order Detail for User)",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Feature 7: Order Confirmation Page (Order Detail for User)",
+    "chunk_index": 31
+  },
+  {
+    "text": "### Назначение\nСтраница заказа `/order/:id` — детали после создания: итоги, статус оплаты и доставки, PayPal-кнопка для незаоплаченных заказов. Для покупателя + ограниченные admin-функции. Persona: покупатель после оформления.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 32
+  },
+  {
+    "text": "### User flow\n1. После `placeOrder` → редирект на `/order/:id`.\n2. Отображение: имя/email покупателя, адрес, метод оплаты, список товаров, суммы.\n3. Если не оплачен → PayPal-кнопка.\n4. После оплаты → `isPaid: true`, зелёное сообщение `\"Paid on [date]\"`.\n5. Admin видит кнопку «Mark As Delivered» (если оплачен и не доставлен).",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 33
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `OrderScreen.js` — использует `sdkReady` state для отслеживания загрузки PayPal SDK.\n- **Action:** `getOrderDetails(orderId)` → GET `/api/orders/:id`.\n- **PayPal SDK:** загружается динамически через `addPayPalScript()`:\n  ```js\n  const { data: clientId } = await axios.get('/api/config/paypal')\n  // создаёт <script> тег с PayPal SDK URL\n  ```\n- **`itemsPrice` вычисляется на фронте** из `order.orderItems` — не хранится в OrderModel напрямую.\n- **`useEffect` зависимости:** `orderId, successPay, successDeliver, order` — обновляет данные после каждого изменения статуса.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 34
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/orders/:id` — private, response: полный order object с populate('user', 'name email').\n- `GET /api/config/paypal` — public, response: PayPal client ID из env.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 35
+  },
+  {
+    "text": "### Edge cases\n- Пользователь пытается получить чужой заказ по ID — контроллер не проверяет ownership (только `protect` middleware). Security issue учебного проекта.\n- PayPal SDK уже загружен (`window.paypal`) → `setSdkReady(true)` без повторной загрузки.\n- Оплаченный заказ: PayPal-кнопка скрывается (`{!order.isPaid && ...}`).\n- `orderPay.success` или `orderDeliver.success` → dispatch `ORDER_PAY_RESET` / `ORDER_DELIVER_RESET` + `getOrderDetails` для refresh.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 36
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Auth, createOrder (создаётся перед просмотром), PayPal integration.\n- Содержит в себе: Payment flow (PayPal button), Admin Deliver action.\n\n---",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 37
+  },
+  {
+    "text": "### Назначение\nТаблица всех заказов текущего пользователя на странице профиля. Показывает ID, дату, сумму, статус оплаты и доставки, ссылку на детали. Persona: покупатель, отслеживающий свои заказы.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 38
+  },
+  {
+    "text": "### User flow\n1. На `/profile` правая колонка (9/12 ширины) — таблица «My Orders».\n2. Строки: ID, DATE, TOTAL, PAID (дата или красный X), DELIVERED (дата или красный X).\n3. Кнопка «Details» → `/order/:id`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 39
+  },
+  {
+    "text": "### Технический impl\n- **Action:** `listMyOrders()` → GET `/api/orders/myorders`.\n- **Reducer:** `orderListMyReducer` — `{ orders, loading, error }`.\n- **Controller:** `getMyOrders` — `Order.find({ user: req.user._id })`.\n- Вызывается в `useEffect` ProfileScreen вместе с `getUserDetails`.\n- **Дата:** `order.createdAt.substring(0, 10)` — формат YYYY-MM-DD.\n- **Paid date:** `order.paidAt.substring(0, 10)` — если не оплачен, иконка `fa-times` (красная).",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 40
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/orders/myorders` — private, response: массив orders текущего пользователя.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 41
+  },
+  {
+    "text": "### Edge cases\n- `order.paidAt.substring(0, 10)` — если `isPaid=false`, `paidAt` undefined → крэш при попытке substring. Предотвращается ternary `order.isPaid ? order.paidAt... : <icon>`.\n- Много заказов → бесконечная таблица (пагинация не реализована).\n- `errorOrders` → `<Message variant='danger'>{errorOrders}</Message>`.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 42
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Auth, Profile screen (встроена как sub-feature).\n- `ORDER_LIST_MY_RESET` диспатчится при logout.",
+    "source": "features/checkout.md",
+    "category": "core",
+    "title": "Checkout Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 43
+  }
+]

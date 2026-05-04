@@ -1,0 +1,66 @@
+[
+  {
+    "text": "## Route\n`/cart/:id?` (optional product ID for immediate add)",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "Route",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Access\nPublic (no authentication required for viewing, redirects to login for checkout)",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "Access",
+    "chunk_index": 1
+  },
+  {
+    "text": "## What Users See\nA two-column layout: left side displays a list of cart items with images, names, prices, and quantity selector dropdowns; right side shows a summary card with subtotal calculation, item count, and a \"Proceed To Checkout\" button.\n\nEach cart item displays thumbnail image, product link, unit price, and a dropdown to adjust quantity. A delete button (trash icon) removes items from cart.",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "What Users See",
+    "chunk_index": 2
+  },
+  {
+    "text": "## State (Redux)\n- `cart` slice: `cartItems` array containing `{ product, name, image, price, qty, countInStock }`",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "State (Redux)",
+    "chunk_index": 3
+  },
+  {
+    "text": "## API Calls\n- **On mount**: If `productId` in URL, immediately dispatches `addToCart(productId, qty)` to add/update item\n- No backend call for cart operations; cart is stored in localStorage via reducer",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "API Calls",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Components\n- **Message** – displays \"Your cart is empty\" with link to home\n- **Form.Control** (select) – quantity selector\n- **Button** – delete item button (trash icon variant)\n- **Card** – subtotal summary card with checkout button",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "Components",
+    "chunk_index": 5
+  },
+  {
+    "text": "## User Actions\n- **Change quantity**: Dropdown updates item quantity (re-adds item with new quantity)\n- **Delete item**: Trash button removes item from cart\n- **Proceed To Checkout**: Redirects to `/login?redirect=shipping` (requires authentication)\n- **Click product link**: Navigates to product detail page\n- **Go Back**: Click on home link in empty message",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "User Actions",
+    "chunk_index": 6
+  },
+  {
+    "text": "## Edge Cases\n- Empty cart: Shows message with \"Go Back\" link, checkout button is disabled\n- Cart with 0 quantity: Invalid state (should not occur in normal flow)\n- Quantity exceeds stock: Dropdown only shows available quantities\n- Item count in subtotal: Shows total number of items (sum of quantities)\n- Invalid product ID in URL: addToCart action handles gracefully\n- Browser refresh: Cart persists via localStorage integration in reducer",
+    "source": "pages/cart.md",
+    "category": "core",
+    "title": "Shopping Cart Screen",
+    "section": "Edge Cases",
+    "chunk_index": 7
+  }
+]

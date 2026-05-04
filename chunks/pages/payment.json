@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAuthenticated users only (accessed after shipping step). Redirects to shipping if shipping address is not set.",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA form container with checkout step indicators showing steps 1-3 (login, shipping, payment) as active. A radio button group labeled \"Select Method\" displays payment method options. Currently only \"PayPal or Credit Card\" is visible (Stripe option is commented out in code). A \"Continue\" button submits the selection and proceeds to order review.",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `cart` slice: `shippingAddress` (verified for presence), `paymentMethod` (set by this page)",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- No API call. Form data is saved to Redux store via `savePaymentMethod()` action\n- Data will be used when creating the order",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **FormContainer** – centered form wrapper\n- **CheckoutSteps** – displays checkout progress (step1, step2, step3 props)\n- **Form** (Bootstrap) – radio button group for payment method selection\n- **Button** – submit button",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Select payment method**: Radio button changes paymentMethod state (defaults to \"PayPal\")\n- **Click \"Continue\"**: Saves selection to Redux, navigates to `/placeorder`",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- No shipping address set: Page redirects to `/shipping` on mount (guard check)\n- Default selection: \"PayPal or Credit Card\" is checked by default\n- Multiple options: Only one payment method currently active (Stripe is commented out)\n- Form submission: Dispatch action before navigation\n- Radio button behavior: Only one option can be selected at a time (HTML standard)\n- No validation needed: Single pre-selected option is valid default",
+    "source": "pages/payment.md",
+    "category": "core",
+    "title": "Payment Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

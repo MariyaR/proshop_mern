@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAdmin users only. Non-admin users and unauthenticated users are redirected to login.",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA table listing all users in the system with columns: ID, Name, Email (clickable mailto link), Admin status (checkmark or X icon), and action buttons (Edit, Delete). Each row represents one user. A heading \"Users\" appears above the table.",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `userList` slice: `loading`, `error`, `users` array\n- `userLogin` slice: `userInfo` (used for admin access control)\n- `userDelete` slice: `success` flag (triggers refetch on delete)",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount**: `GET /api/users` via `listUsers()` action to fetch all users\n- **On delete button click**: `DELETE /api/users/:id` via `deleteUser(id)` action",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **Table** (Bootstrap) – responsive striped table\n- **Button** – edit and delete action buttons per row\n- **Message** – error alert display\n- **Loader** – loading spinner during fetch\n- **LinkContainer** (from react-router-bootstrap) – wraps edit button for navigation",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Click Edit button**: Navigates to `/admin/user/:id/edit`\n- **Click Delete button**: Shows confirmation dialog; if confirmed, dispatches deleteUser action\n- **Confirmation dialog**: Native `window.confirm()` prompt",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- User not authenticated: Redirected to login on mount (guard in useEffect)\n- User not admin: Redirected to login on mount\n- Empty users list: Table renders with no body rows\n- Delete error: Error message displayed\n- Delete success: Table refreshes automatically (successDelete dependency triggers refetch)\n- Loading state: Spinner replaces table\n- API error on initial fetch: Error message displayed, table hidden\n- User is himself: Can still delete own account (no safety guard in UI)",
+    "source": "pages/admin-users.md",
+    "category": "core",
+    "title": "Admin Users List Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

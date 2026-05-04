@@ -1,0 +1,178 @@
+[
+  {
+    "text": "# Feature Flag Toggle Runbook\n\n**Purpose:** Safely roll out new features to production via feature flags with zero-downtime, progressive canary deployment, and instant kill switch.  \n**Audience:** Product managers, backend engineers, release managers.  \n**Duration:** Varies by rollout strategy (5 min to 2 hours for full rollout).  \n**Scope:** Feature flags are conditionals in code that enable/disable code paths without redeployment.",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Architecture Overview\n\nFeature flags are stored in MongoDB and checked at runtime. Example:\n\n```javascript\n// backend/controllers/productController.js\nconst featureFlags = await FeatureFlag.findOne({ key: 'new-search-filter' })\n\nif (featureFlags?.enabled) {\n  // New filtered search logic\n  products = await Product.find(filterQuery).populate('reviews')\n} else {\n  // Old search logic\n  products = await Product.find(filterQuery)\n}\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Architecture Overview",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Feature Flag Schema (MongoDB)\n\n```javascript\n{\n  key: \"new-search-filter\",           // Unique identifier\n  enabled: false,                     // Global on/off\n  rolloutPercentage: 0,               // 0-100%, overrides enabled if set\n  targetUserIds: [],                  // Whitelist specific users\n  excludeUserIds: [],                 // Blacklist specific users\n  startDate: ISODate(\"2024-04-15\"),   // When to enable\n  endDate: ISODate(\"2024-05-15\"),     // When to auto-disable\n  metadata: {\n    description: \"New product search with advanced filtering\",\n    owner: \"product-team\",\n    metrics: { exposure: 5000, conversions: 150 }\n  }\n}\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Feature Flag Schema (MongoDB)",
+    "chunk_index": 2
+  },
+  {
+    "text": "### 1. Code Implementation\n\nEnsure code has both old and new paths protected by the flag:\n\n```javascript\nexport async function getProducts(req, res) {\n  try {\n    const flag = await FeatureFlag.findOne({ key: 'new-search-filter' })\n    const shouldEnableNewSearch = evaluateFlag(flag, req.user._id)\n\n    if (shouldEnableNewSearch) {\n      // New implementation\n      const results = await searchNewAlgorithm(req.query)\n      res.json(results)\n    } else {\n      // Old implementation (stable fallback)\n      const results = await searchOldAlgorithm(req.query)\n      res.json(results)\n    }\n  } catch (error) {\n    res.status(500).json({ error: error.message })\n  }\n}\n\nfunction evaluateFlag(flag, userId) {\n  if (!flag) return false\n  if (flag.excludeUserIds.includes(userId)) return false\n  if (flag.targetUserIds.length > 0) return flag.targetUserIds.includes(userId)\n  if (flag.rolloutPercentage > 0) {\n    const hash = hashFunction(userId) % 100\n    return hash < flag.rolloutPercentage\n  }\n  return flag.enabled\n}\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "1. Code Implementation",
+    "chunk_index": 3
+  },
+  {
+    "text": "### 2. Local Testing\n\nTest both code paths locally before deploying:\n\n```bash\n# Terminal 1: Start app with flag disabled\nNODE_ENV=development npm run dev\n\n# Terminal 2: Test old path\ncurl \"http://localhost:5001/api/products?sort=price\" | jq .\n\n# Terminal 3: Manually enable flag in MongoDB (local)\n# Use MongoDB compass or CLI:\n# db.featureflags.updateOne(\n#   { key: 'new-search-filter' },\n#   { $set: { enabled: true } }\n# )\n\n# Test new path (should see different results)\ncurl \"http://localhost:5001/api/products?sort=price\" | jq .\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "2. Local Testing",
+    "chunk_index": 4
+  },
+  {
+    "text": "### 3. Staging Verification\n\nDeploy code to staging first (if you have a staging environment):\n\n```bash\ngit push staging main\n# Test on staging: https://proshop-staging.herokuapp.com\n```\n\nVerify:\n- New code path works without errors.\n- Old code path (with flag disabled) still works.\n- No performance degradation (latency, CPU, memory).",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "3. Staging Verification",
+    "chunk_index": 5
+  },
+  {
+    "text": "### 4. Create Feature Flag Document in Production MongoDB\n\n```javascript\n// Connect to production MongoDB Atlas\n// Use MongoDB Compass or mongo shell\n\ndb.featureflags.insertOne({\n  key: \"new-search-filter\",\n  enabled: false,\n  rolloutPercentage: 0,\n  targetUserIds: [],\n  excludeUserIds: [],\n  startDate: null,\n  endDate: null,\n  metadata: {\n    description: \"New product search with advanced filtering\",\n    owner: \"product-team\",\n    createdAt: new Date(),\n    metrics: { exposure: 0, conversions: 0 }\n  }\n})\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "4. Create Feature Flag Document in Production MongoDB",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Phase 1: Internal Testing (0% → 5%)\n\nEnable flag for your team and key stakeholders only:\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  {\n    $set: {\n      rolloutPercentage: 5,\n      targetUserIds: [\"user123\", \"user456\"],  // Your test accounts\n      excludeUserIds: []\n    }\n  }\n)\n```\n\n**Duration:** 1–2 hours.  \n**Monitoring:** Watch error logs, response times, and user behavior in analytics.\n\n```bash\n# Check logs\nheroku logs --app proshop-prod --tail | grep \"new-search-filter\"\n\n# Example: Look for errors\nheroku logs --app proshop-prod --grep \"Error\"\n```\n\n**Success criteria:**\n- Zero errors in logs.\n- P95 latency unchanged.\n- Test users report expected behavior.",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Phase 1: Internal Testing (0% → 5%)",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Phase 2: Canary – Beta Users (5% → 25%)\n\nGradually expose to a wider audience:\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  { $set: { rolloutPercentage: 25 } }\n)\n```\n\n**Duration:** 2–4 hours.  \n**Metrics to track:**\n- Error rate (aim for 0%).\n- Average response time (should not increase >10%).\n- Conversion rate (aim for no decrease).\n- User complaints in support channels.\n\n**Query conversion rate (example):**\n\n```javascript\n// Pseudo-query: count orders created after rollout\ndb.orders.aggregate([\n  {\n    $match: {\n      createdAt: { $gte: ISODate(\"2024-04-15T10:00:00Z\") }\n    }\n  },\n  {\n    $group: {\n      _id: null,\n      totalOrders: { $sum: 1 },\n      totalRevenue: { $sum: \"$totalPrice\" }\n    }\n  }\n])\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Phase 2: Canary – Beta Users (5% → 25%)",
+    "chunk_index": 8
+  },
+  {
+    "text": "### Phase 3: Production – Half Users (25% → 50%)\n\nRoll out to 50% of user base:\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  { $set: { rolloutPercentage: 50 } }\n)\n```\n\n**Duration:** 4–8 hours.  \n**Action:** If any critical issues arise, proceed to kill switch (see below).",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Phase 3: Production – Half Users (25% → 50%)",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Phase 4: Full Rollout (50% → 100%)\n\nRelease to all users:\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  {\n    $set: {\n      enabled: true,\n      rolloutPercentage: 0  // Reset percentage, use enabled flag instead\n    }\n  }\n)\n```\n\n**Duration:** 1 hour.  \n**Post-rollout:** Monitor logs for 24 hours. If stable, you can remove the feature flag from code (clean-up tech debt).",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Phase 4: Full Rollout (50% → 100%)",
+    "chunk_index": 10
+  },
+  {
+    "text": "## Kill Switch – Emergency Disable\n\nIf users report issues during any phase:",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Kill Switch – Emergency Disable",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Immediate Action (< 1 minute)\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  { $set: { enabled: false, rolloutPercentage: 0 } }\n)\n```\n\nAll users immediately revert to old code path. **No redeployment required.**",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Immediate Action (< 1 minute)",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Verify Kill Switch Worked\n\n```bash\n# Wait 30 seconds for cache invalidation\nsleep 30\n\n# Test with curl\ncurl \"http://localhost:5001/api/products\" -H \"X-Debug: new-search-filter\"\n\n# Logs should show: \"Feature disabled, using fallback search\"\nheroku logs --app proshop-prod --tail\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Verify Kill Switch Worked",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Investigation & Root Cause Analysis\n\nPost-incident (do not delay fix):\n\n1. **Identify what broke:** Check logs, user reports, performance metrics.\n2. **Root cause:** Was it the new search algorithm, database query, or edge case in old code?\n3. **Fix:** Patch the code, re-test locally, stage it.\n4. **Re-enable:** Restart rollout from Phase 1.\n\n**Example incident log template:**\n\n```markdown",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Investigation & Root Cause Analysis",
+    "chunk_index": 14
+  },
+  {
+    "text": "## Incident: new-search-filter rollout\n\n**Time:** 2024-04-15 11:30 UTC  \n**Severity:** P1 (affecting 25% of users)  \n**Kill switch:** Triggered at 11:35 UTC  \n**Recovery time:** 5 minutes  \n\n**Root cause:** New search algorithm had O(n²) complexity; timeout on large product catalogs.  \n**Fix:** Optimized with database indexing + limit query results to 1000.  \n**Status:** Resolved and re-tested in staging. Re-rolling out 2024-04-16 15:00 UTC.\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Incident: new-search-filter rollout",
+    "chunk_index": 15
+  },
+  {
+    "text": "## Monitoring Checklist\n\nDuring all rollout phases, monitor these KPIs every 30 minutes:\n\n| KPI | Healthy | Alert Threshold |\n|-----|---------|-----------------|\n| Error rate | 0% | > 1% |\n| P95 latency | Baseline | +50ms |\n| CPU usage | < 60% | > 80% |\n| Memory usage | < 512MB | > 700MB |\n| Order conversion rate | Baseline | -5% or more |\n| Cart abandonment rate | Baseline | +10% or more |\n\n**Command to extract latency metrics** (if instrumented):\n\n```bash\nheroku logs --app proshop-prod | grep \"response_time\" | tail -20\n```",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Monitoring Checklist",
+    "chunk_index": 16
+  },
+  {
+    "text": "## Cleanup & Post-Rollout\n\nOnce fully rolled out and stable (24+ hours):",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Cleanup & Post-Rollout",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Option 1: Keep Flag for Easy Rollback\n\nLeave flag in database as a permanent emergency kill switch:\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  { $set: { enabled: true } }\n)\n```\n\nUpdate code to remove the conditional (feature is now default):\n\n```javascript\n// Remove conditional, always use new implementation\nconst results = await searchNewAlgorithm(req.query)\nres.json(results)\n```\n\nKeep flag document for historical reference / future rollback if needed.",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Option 1: Keep Flag for Easy Rollback",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Option 2: Remove Flag Entirely (Hard Delete)\n\nDelete the flag and remove code conditional:\n\n```javascript\ndb.featureflags.deleteOne({ key: \"new-search-filter\" })\n```\n\nThis is cleaner but removes rollback option. Only do this after 1+ week of stable production.",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Option 2: Remove Flag Entirely (Hard Delete)",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Update Metrics\n\n```javascript\ndb.featureflags.updateOne(\n  { key: \"new-search-filter\" },\n  {\n    $set: {\n      \"metadata.rolloutCompletedAt\": new Date(),\n      \"metadata.totalExposure\": 45000,  // Users who saw feature\n      \"metadata.totalConversions\": 2100,\n      \"metadata.conversionLift\": 0.087  // 8.7% improvement\n    }\n  }\n)\n```\n\nDocument results in a postmortem or wiki page for future reference.",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Update Metrics",
+    "chunk_index": 20
+  },
+  {
+    "text": "## Reference Commands\n\n| Command | Purpose |\n|---------|---------|\n| `db.featureflags.find()` | List all flags |\n| `db.featureflags.updateOne({ key: \"...\" }, { $set: { ... } })` | Update flag (enable, adjust rollout %) |\n| `db.featureflags.deleteOne({ key: \"...\" })` | Delete flag |\n| `heroku logs --tail` | Live logs (watch for errors) |\n| `curl -H \"X-User-ID: user123\" http://localhost/api/products` | Test specific user flag evaluation |\n\n---\n\n**Last updated:** M3 curriculum.  \n**Questions?** Contact your DevOps or product team for flag management permissions.",
+    "source": "runbooks/feature-flag-toggle.md",
+    "category": "core",
+    "title": "Logs should show: \"Feature disabled, using fallback search\"",
+    "section": "Reference Commands",
+    "chunk_index": 21
+  }
+]

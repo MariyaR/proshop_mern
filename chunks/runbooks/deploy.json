@@ -1,0 +1,170 @@
+[
+  {
+    "text": "# Deployment Runbook\n\n**Purpose:** Deploy proshop-mern to production (Heroku).  \n**Audience:** DevOps engineers, deployment maintainers.  \n**Duration:** 20–30 minutes including build time.  \n**Prerequisites:** Heroku CLI installed, git remote configured, production MongoDB Atlas cluster.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Pre-Deployment Checklist\n\nBefore deploying to production:\n\n- [ ] All tests pass locally (`npm run test`, if available).\n- [ ] Code reviewed and merged to `main` branch.\n- [ ] Environment variables verified for production.\n- [ ] MongoDB Atlas connection string validated.\n- [ ] Backup of production database taken (if updating schema).\n- [ ] Rollback plan documented (see Rollback Procedure below).\n- [ ] Notify team of planned deployment window (if during business hours).",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Pre-Deployment Checklist",
+    "chunk_index": 1
+  },
+  {
+    "text": "### 1. Create `.env.production` (Never Commit)\n\n```\nNODE_ENV=production\nPORT=80\nMONGO_URI=mongodb+srv://<user>:<password>@<cluster>/proshop?retryWrites=true&w=majority\nJWT_SECRET=<generate-a-strong-random-secret>\nPAYPAL_CLIENT_ID=<production-client-id>\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "1. Create `.env.production` (Never Commit)",
+    "chunk_index": 2
+  },
+  {
+    "text": "### 2. Set Heroku Config Vars\n\n```bash\nheroku config:set NODE_ENV=production --app proshop-prod\nheroku config:set MONGO_URI=\"mongodb+srv://<user>:<password>@...\" --app proshop-prod\nheroku config:set JWT_SECRET=\"<strong-secret>\" --app proshop-prod\nheroku config:set PAYPAL_CLIENT_ID=\"<prod-id>\" --app proshop-prod\n```\n\nVerify config was set:\n\n```bash\nheroku config --app proshop-prod\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "2. Set Heroku Config Vars",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Step 1: Prepare Git Repository\n\nEnsure you're on the `main` branch with all changes committed:\n\n```bash\ngit status  # Should show \"working tree clean\"\ngit branch  # Should show \"* main\"\n```\n\nIf you have uncommitted changes, either commit or stash them:\n\n```bash\ngit add .\ngit commit -m \"Deployment: prepare production release\"\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Step 1: Prepare Git Repository",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Step 2: Build Frontend\n\nThe `heroku-postbuild` script in `package.json` handles this automatically, but you can test locally:\n\n```bash\nnpm run build --prefix frontend\n```\n\nThis creates `frontend/build/` with optimized React bundle.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Step 2: Build Frontend",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Step 3: Deploy to Heroku\n\nPush to Heroku remote:\n\n```bash\ngit push heroku main\n```\n\n**Expected output:**\n- Heroku compiles Node.js dependencies.\n- Runs `heroku-postbuild` script (installs frontend deps + builds React).\n- Starts the app dyno.\n- Logs appear in terminal — watch for errors.\n\n**Typical build time:** 3–5 minutes.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Step 3: Deploy to Heroku",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Step 4: Verify Deployment\n\nCheck app status:\n\n```bash\nheroku logs --app proshop-prod --tail\n```\n\nExpected final log line: `App started` or `Listening on port 80` (or dynamic PORT).\n\nOpen the app in browser:\n\n```bash\nheroku open --app proshop-prod\n```\n\n**Manual checks:**\n1. Homepage loads and displays product grid.\n2. Click a product — details page renders.\n3. Add to cart — cart updates.\n4. Login — authentication works.\n5. Curl API endpoint: `curl https://proshop-prod.herokuapp.com/api/products`",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Step 4: Verify Deployment",
+    "chunk_index": 7
+  },
+  {
+    "text": "## Rollback Procedure\n\nIf deployment causes issues, quickly revert to the previous version:",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Rollback Procedure",
+    "chunk_index": 8
+  },
+  {
+    "text": "### Option 1: Rollback via Heroku Release History\n\n```bash\n# View recent releases\nheroku releases --app proshop-prod\n\n# Output:\n# === Releases - proshop-prod\n# v25   Deploy 1a2b3c  2024-04-15 14:32:00 UTC\n# v24   Deploy 4d5e6f  2024-04-14 13:12:00 UTC\n# ...\n\n# Rollback to previous release (v24)\nheroku releases:rollback v24 --app proshop-prod\n```\n\nHeroku automatically restarts the app with the previous code. Wait ~1 minute for restart.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Option 1: Rollback via Heroku Release History",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Option 2: Rollback via Git\n\nIf Heroku rollback is unavailable, push a previous commit:\n\n```bash\n# Find the commit before the broken deployment\ngit log --oneline | head -10\n\n# Revert to a specific commit\ngit revert HEAD  # or git reset --hard <commit-hash>\n\n# Push again\ngit push heroku main --force\n```\n\n**Warning:** Using `--force` can cause race conditions. Prefer Option 1.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Option 2: Rollback via Git",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Option 3: Emergency Kill Switch\n\nTemporarily disable the app:\n\n```bash\nheroku dyno:kill web.1 --app proshop-prod\n```\n\nThis stops the app immediately (users see error page). Buy time to investigate root cause and prepare a real fix.\n\nTo restart:\n\n```bash\nheroku dyno:restart --app proshop-prod\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Option 3: Emergency Kill Switch",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Check Application Logs\n\n```bash\nheroku logs --app proshop-prod --num 100  # Last 100 lines\n```\n\nWatch for:\n- `Error:` or `FATAL:` messages.\n- `MongoError:` — database connection issues.\n- `ReferenceError:` — undefined variables.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Check Application Logs",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Monitor Dyno Performance\n\n```bash\nheroku dyno:type --app proshop-prod\n```\n\nCheck CPU/memory usage (available in Heroku dashboard).",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Monitor Dyno Performance",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Basic Health Check\n\nCreate a simple endpoint in your backend (if not already present) to monitor:\n\n```javascript\n// backend/routes/healthRoutes.js\nrouter.get('/health', (req, res) => {\n  res.status(200).json({ status: 'OK', timestamp: new Date() })\n})\n```\n\nCurl it every 30 seconds for 5 minutes post-deploy:\n\n```bash\nwatch -n 30 'curl -s https://proshop-prod.herokuapp.com/api/health | jq .'\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Basic Health Check",
+    "chunk_index": 14
+  },
+  {
+    "text": "### Issue: `H14 – No web processes running`\n\n**Cause:** Procfile missing or incorrect.  \n**Fix:** Ensure `Procfile` exists in root:\n\n```\nweb: node backend/server.js\n```\n\nRedeploy:\n\n```bash\ngit push heroku main\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Issue: `H14 – No web processes running`",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Issue: `Application error` on browser, logs show `Cannot find module`\n\n**Cause:** Dependencies not installed.  \n**Fix:** Clear Heroku build cache and redeploy:\n\n```bash\nheroku builds:cancel --app proshop-prod\ngit push heroku main --force\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Issue: `Application error` on browser, logs show `Cannot find module`",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Issue: `MONGO_URI not found` error\n\n**Cause:** Environment variable not set.  \n**Fix:** Verify config vars:\n\n```bash\nheroku config --app proshop-prod | grep MONGO\n```\n\nIf missing, set it:\n\n```bash\nheroku config:set MONGO_URI=\"mongodb+srv://...\" --app proshop-prod\n```\n\nRestart app:\n\n```bash\nheroku dyno:restart --app proshop-prod\n```",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Issue: `MONGO_URI not found` error",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Issue: Frontend shows blank page\n\n**Cause:** Frontend bundle not built or served correctly.  \n**Fix:**\n1. Check `heroku-postbuild` script ran: `heroku logs | grep build`\n2. Verify `server.js` has static file handler for `frontend/build/`.\n3. Rebuild frontend manually: `npm run build --prefix frontend && git push heroku main`",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Issue: Frontend shows blank page",
+    "chunk_index": 18
+  },
+  {
+    "text": "## Post-Deployment\n\nOnce verified stable:\n\n1. **Document the release:** Update `CHANGELOG.md` (if available).\n   ```markdown\n   ## [1.0.5] — 2024-04-15\n   - Fixed payment flow bug\n   - Updated product filters\n   ```\n\n2. **Notify stakeholders:** Alert team that deployment is complete and stable.\n\n3. **Monitor for 24 hours:** Watch logs and error tracking for anomalies.\n\n4. **Cleanup:** Remove any temporary branches or configs.",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Post-Deployment",
+    "chunk_index": 19
+  },
+  {
+    "text": "## Reference Commands\n\n| Command | Purpose |\n|---------|---------|\n| `git push heroku main` | Deploy main branch to Heroku |\n| `heroku logs --tail` | Stream live logs |\n| `heroku config` | View all environment variables |\n| `heroku restart` | Restart the app dyno |\n| `heroku releases` | View deployment history |\n| `heroku releases:rollback` | Revert to previous release |\n\n---\n\n**Last updated:** M3 curriculum.  \n**Contact:** Deploy lead or DevOps team for production secrets (MONGO_URI, JWT_SECRET).",
+    "source": "runbooks/deploy.md",
+    "category": "core",
+    "title": "Push again",
+    "section": "Reference Commands",
+    "chunk_index": 20
+  }
+]

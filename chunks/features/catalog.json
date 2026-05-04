@@ -1,0 +1,402 @@
+[
+  {
+    "text": "# Catalog Features — ProShop MERN\n\nПокрывает листинг товаров, детальную страницу, поиск, пагинацию, карусель и систему рейтингов/отзывов.\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "### Назначение\nГлавная страница — отображает все товары в виде адаптивной сетки. Точка входа для всех покупателей. Persona: посетитель, браузит ассортимент.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 1
+  },
+  {
+    "text": "### User flow\n1. Пользователь открывает `/` (HomeScreen).\n2. Загружается карусель топ-товаров (только если нет поискового запроса).\n3. Ниже — сетка товарных карточек: 1/2/3/4 колонки в зависимости от breakpoint.\n4. Если товаров больше pageSize (10) — отображается пагинация.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `HomeScreen.js` — читает `match.params.keyword` и `match.params.pageNumber` из React Router.\n- **Component:** `Product.js` — карточка с image, name, Rating, price, ссылкой на `/product/:id`.\n- **Component:** `ProductCarousel.js` — показывается только при отсутствии keyword.\n- **Component:** `Meta.js` — устанавливает SEO-мета через `react-helmet` (title, description, keywords).\n- **Action:** `listProducts(keyword, pageNumber)` — GET `/api/products?keyword=...&pageNumber=...`.\n- **Reducer:** `productListReducer` — `{ products, page, pages, loading, error }`.\n- **Controller:** `getProducts` — MongoDB `.find({ ...keyword })` с `.limit(10).skip(pageSize * (page-1))`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 3
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products?keyword=&pageNumber=1` — public, response: `{ products: [...], page: 1, pages: N }`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Edge cases\n- Пустой каталог → пустая сетка без ошибки.\n- MongoDB недоступна → error попадает в reducer, отображается `<Message variant='danger'>`.\n- Очень длинное название товара — переполнение карточки без ограничений (CSS overflow не задан явно).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product model, MongoDB.\n- От этой фичи зависят: Search (передаёт keyword в ту же action), Pagination (page/pages из response), Carousel (тот же HomeScreen).\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Назначение\nПолнотекстовый поиск по названию товара через URL-параметр. Persona: покупатель, знает что ищет.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 7
+  },
+  {
+    "text": "### User flow\n1. Пользователь вводит текст в SearchBox в хедере.\n2. Нажимает Enter или кликает «Search».\n3. Редирект на `/search/:keyword`.\n4. HomeScreen получает keyword из `match.params.keyword`, диспатчит `listProducts(keyword, pageNumber)`.\n5. Результаты фильтруются на сервере, карусель скрывается, появляется кнопка «Go Back».\n6. Пустой запрос → редирект на `/` (весь каталог).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 8
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `SearchBox.js` — локальный state `keyword`, submit handler с `history.push`.\n- **Route:** `/search/:keyword` и `/search/:keyword/page/:pageNumber` в `App.js`.\n- **Backend filter:** `getProducts` controller использует MongoDB `$regex` с `$options: 'i'` (case-insensitive):\n  ```js\n  name: { $regex: req.query.keyword, $options: 'i' }\n  ```\n- Поиск только по полю `name` — другие поля (brand, category, description) не индексируются.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 9
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products?keyword=iphone&pageNumber=1` — public.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Edge cases\n- Спецсимволы в запросе (`.`, `*`, `(`) — MongoDB $regex не экранируется, возможна regex-инъекция (известный баг учебного проекта).\n- Пробелы в keyword → кодируются URL-safe браузером при history.push.\n- Пустой trimmed string → `history.push('/')` без запроса.\n- Нет результатов → пустая сетка + пагинация не показывается (pages=1 → `Paginate` ничего не рендерит).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product list, Pagination (поисковая пагинация использует `/search/:keyword/page/:n` URL).\n- `Paginate` компонент получает `keyword` prop и строит правильные URL.\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Назначение\nПостраничная навигация по каталогу (и по admin product list). Сервер возвращает данные только текущей страницы (pageSize=10). Persona: покупатель, листает большой каталог.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 13
+  },
+  {
+    "text": "### User flow\n1. Если товаров > 10, под сеткой появляется компонент Pagination.\n2. Клик на номер страницы → URL меняется на `/page/:n` или `/search/:keyword/page/:n`.\n3. HomeScreen читает `match.params.pageNumber`, диспатчит новый запрос.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 14
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `Paginate.js` — props: `pages`, `page`, `isAdmin`, `keyword`. Рендерится только если `pages > 1`.\n- **URL routing:**\n  - Каталог без поиска: `/page/:pageNumber`\n  - С поиском: `/search/:keyword/page/:pageNumber`\n  - Admin product list: `/admin/productlist/:pageNumber`\n- **Backend:** `pageSize = 10`, `.limit(pageSize).skip(pageSize * (page - 1))`.\n- **Active page:** `Pagination.Item active={x + 1 === page}` — текущая страница подсвечивается.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 15
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products?pageNumber=2` — возвращает `{ products, page, pages }`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Edge cases\n- pageNumber=0 или отрицательный → `Number(req.query.pageNumber) || 1` защищает на сервере.\n- pageNumber > pages → MongoDB возвращает пустой массив без ошибки.\n- Одна страница → `Paginate` ничего не рендерит (условие `pages > 1`).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product List, Search (синхронизированы через URL).\n- Admin Product List использует тот же компонент с `isAdmin=true`.\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Назначение\nПолная карточка товара: изображение, описание, цена, статус наличия, выбор количества, кнопка «Add to Cart», список отзывов, форма написания отзыва. Persona: покупатель, решает купить ли.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 19
+  },
+  {
+    "text": "### User flow\n1. Клик на товар в каталоге → `/product/:id`.\n2. Загружается полная информация о товаре.\n3. Справа: цена, статус (In Stock / Out Of Stock).\n4. Если In Stock — dropdown выбора qty (от 1 до countInStock).\n5. Клик «Add To Cart» → редирект на `/cart/:id?qty=N`.\n6. Ниже: список существующих отзывов + форма нового (только для залогиненных).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `ProductScreen.js` — state: `qty`, `rating`, `comment`.\n- **Component:** `Rating.js` — отображает 5 звёзд через FontAwesome (fa-star, fa-star-half-alt, far fa-star) с шагом 0.5.\n- **Component:** `Meta.js` — динамический title `product.name` через Helmet.\n- **Action:** `listProductDetails(id)` — GET `/api/products/:id`.\n- **Reducer:** `productDetailsReducer` — `{ product, loading, error }`.\n- **Qty selector:** `[...Array(product.countInStock).keys()].map(x => x+1)` — генерирует options от 1 до countInStock.\n- `addToCartHandler` → `history.push('/cart/:id?qty=N')` (не диспатчит action напрямую, делегирует CartScreen).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 21
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products/:id` — public, response: полный product object включая `reviews[]`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Edge cases\n- `countInStock === 0` → кнопка «Add To Cart» disabled, qty selector скрыт.\n- Товар не найден (невалидный ID) → HTTP 404, `<Message variant='danger'>Product not found</Message>`.\n- Невалидный MongoDB ObjectId → Mongoose бросает CastError → errorMiddleware возвращает HTTP 500 без специальной обработки (учебный баг).\n- `product.reviews.length === 0` → `<Message>No Reviews</Message>`.\n- После сабмита review: `setRating(0)` + `setComment('')` сбрасывают форму; `PRODUCT_CREATE_REVIEW_RESET` диспатчится при следующем открытии страницы.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 23
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product model, Rating component.\n- От этой фичи зависят: Cart (получает productId + qty через URL), Reviews (встроены в этот же экран).\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 24
+  },
+  {
+    "text": "### Назначение\nВизуальный слайдер топ-3 товаров по рейтингу на главной странице. Показывается только без активного поиска. Persona: посетитель, нужен быстрый путь к популярным товарам.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 25
+  },
+  {
+    "text": "### User flow\n1. При загрузке HomeScreen без keyword — рендерится `ProductCarousel`.\n2. Компонент самостоятельно диспатчит `listTopProducts()`.\n3. Слайдер с тремя товарами, pause on hover.\n4. Клик на изображение → переход на `/product/:id`.\n5. Caption содержит name + price.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 26
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `ProductCarousel.js` — использует React Bootstrap `Carousel`.\n- **Action:** `listTopProducts()` — GET `/api/products/top`.\n- **Reducer:** `productTopRatedReducer` — `{ products, loading, error }`.\n- **Controller:** `getTopProducts` — `Product.find({}).sort({ rating: -1 }).limit(3)`.\n- **Важный порядок роутов:** `router.get('/top', getTopProducts)` должен стоять **до** `router.route('/:id')` в `productRoutes.js`, иначе Express матчит `/top` как `:id`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 27
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products/top` — public, response: массив из 3 product objects.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 28
+  },
+  {
+    "text": "### Edge cases\n- Меньше 3 товаров → возвращаются все доступные (`.limit(3)` не кидает ошибку).\n- Все товары с rating=0 → возвращаются первые 3 в порядке вставки.\n- Нет товаров → пустой массив, Carousel с пустым телом (нет items).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product model, Rating field на товарах.\n- Рейтинг обновляется при добавлении/изменении отзывов.\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 30
+  },
+  {
+    "text": "### Назначение\nВизуальное отображение среднего рейтинга звёздами (1-5, с шагом 0.5) и количеством отзывов. Используется в карточках каталога и на детальной странице. Persona: любой посетитель.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 31
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `Rating.js` — props: `value` (число), `text` (строка), `color` (default `#f8e825`).\n- Логика отображения звезды: `value >= N` → полная, `value >= N-0.5` → половинная, иначе → пустая.\n- Всего 5 span-элементов, каждый независимо вычисляет свой класс.\n- Используется в: `Product.js` (card), `ProductScreen.js` (детальная страница + каждый review).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 32
+  },
+  {
+    "text": "### Edge cases\n- `value=0` → все звёзды пустые (far fa-star).\n- `value=5` → все полные.\n- `value=2.7` → 2 полных + 1 половинная + 2 пустых.\n- `text` prop необязателен — если не передан, span не рендерится (`{text && text}`).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 33
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: FontAwesome CSS (подключён глобально).\n- Рейтинг хранится в Product model как `rating` (среднее) + `numReviews` (счётчик).\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 34
+  },
+  {
+    "text": "### Назначение\nОтображение списка отзывов покупателей на детальной странице товара. Каждый отзыв содержит имя автора, звёздный рейтинг, дату и текст комментария. Persona: покупатель, изучает мнения.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 35
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `ProductScreen.js` — секция `<h2>Reviews</h2>`.\n- Данные приходят в составе product object (`product.reviews[]`).\n- Каждый review: `{ _id, name, rating, comment, createdAt }`.\n- Дата: `review.createdAt.substring(0, 10)` — формат YYYY-MM-DD.\n- **Model:** reviewSchema в `productModel.js` — embedded subdocument в массиве `reviews`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 36
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products/:id` — отзывы встроены в product object.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 37
+  },
+  {
+    "text": "### Edge cases\n- Пустой массив reviews → `<Message>No Reviews</Message>`.\n- Очень длинный comment — не ограничен на фронте и в Schema.\n- Дата `createdAt` — MongoDB timestamp, всегда присутствует.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 38
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product Detail (reviews embedded), Write Review Feature.\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 39
+  },
+  {
+    "text": "### Назначение\nФорма написания отзыва на детальной странице товара. Только для залогиненных пользователей. Один пользователь — один отзыв на товар. Persona: покупатель, купивший и протестировавший товар.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 40
+  },
+  {
+    "text": "### User flow\n1. Залогиненный пользователь видит форму под списком отзывов.\n2. Выбирает рейтинг из dropdown (1 Poor / 2 Fair / 3 Good / 4 Very Good / 5 Excellent).\n3. Вводит текст комментария.\n4. Кликает «Submit».\n5. При успехе — сообщение `\"Review submitted successfully\"`, форма сбрасывается.\n6. Незалогиненный видит: `Please sign in to write a review`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 41
+  },
+  {
+    "text": "### Технический impl\n- **Action:** `createProductReview(productId, { rating, comment })` — POST `/api/products/:id/reviews`.\n- **Reducer:** `productReviewCreateReducer` — `{ loading, error, success }`.\n- **Controller:** `createProductReview` — проверяет `alreadyReviewed` (поиск по user._id в reviews), создаёт review object, пересчитывает `product.rating` и `product.numReviews`.\n- **Пересчёт рейтинга:**\n  ```js\n  product.rating = product.reviews.reduce((acc, item) => item.rating + acc, 0) / product.reviews.length\n  ```\n- **`PRODUCT_CREATE_REVIEW_RESET`** диспатчится в `useEffect` при смене productId — сбрасывает success/error.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 42
+  },
+  {
+    "text": "### API endpoints\n- `POST /api/products/:id/reviews` — private (require token), body: `{ rating, comment }`, response HTTP 201 `{ message: 'Review added' }`.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 43
+  },
+  {
+    "text": "### Edge cases\n- Пользователь уже оставлял отзыв → HTTP 400 `\"Product already reviewed\"`.\n- `rating=0` (не выбран из dropdown) — Select по умолчанию имеет value='', что приходит как строка '' → `Number('')=0` → невалидный отзыв без явной валидации.\n- Незалогиненный → кнопка Submit вообще не рендерится (блок показывается по `userInfo ?`).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 44
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Auth (userInfo), Product Detail (productId из match.params.id).\n- После сабмита рейтинг товара обновляется на сервере, но `useEffect` делает re-fetch (`successProductReview` → `listProductDetails`).\n\n---",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 45
+  },
+  {
+    "text": "### Назначение\nДинамические мета-теги для поисковых систем через `react-helmet`. На главной — дефолтные значения, на детальной странице — название товара как title. Persona: поисковые роботы, маркетолог.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 46
+  },
+  {
+    "text": "### Технический impl\n- **Component:** `Meta.js` — оборачивает `<Helmet>` с title, description, keywords.\n- Defaults: `title='Welcome To ProShop'`, `description='We sell the best products for cheap'`, `keywords='electronics, buy electronics, cheap electroincs'`.\n- В `ProductScreen.js`: `<Meta title={product.name} />` — переопределяет только title.\n- В `HomeScreen.js`: `<Meta />` — использует все defaults.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 47
+  },
+  {
+    "text": "### Edge cases\n- SSR не настроен — Helmet работает только на клиенте; краулеры без JS-рендеринга получат дефолтный HTML title.\n- Опечатка в keywords: `\"electroincs\"` (учебный артефакт).",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 48
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `react-helmet` npm package.",
+    "source": "features/catalog.md",
+    "category": "core",
+    "title": "Catalog Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 49
+  }
+]

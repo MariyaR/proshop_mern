@@ -1,0 +1,82 @@
+[
+  {
+    "text": "## Overview\n\nProduct endpoints handle catalog management including listing, searching, filtering, and CRUD operations. Authenticated admin users can create, update, and delete products. All users can view products and submit reviews.",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "Overview",
+    "chunk_index": 0
+  },
+  {
+    "text": "### GET /api/products\n\nRetrieve paginated list of all products with optional keyword search filtering.\n\n**Auth:** Public  \n**Description:** Fetch products with pagination and search capability\n\n**Query Parameters:**\n- `pageNumber` (integer, optional): Page number for pagination (default: 1)\n- `keyword` (string, optional): Search term to filter products by name (case-insensitive regex)\n\n**Response 200 (Success):**\n```json\n{\n  \"products\": [\n    {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"name\": \"Wireless Headphones\",\n      \"image\": \"/images/headphones.jpg\",\n      \"description\": \"High-quality wireless headphones with noise cancellation\",\n      \"brand\": \"AudioTech\",\n      \"category\": \"Electronics\",\n      \"price\": 129.99,\n      \"countInStock\": 15,\n      \"rating\": 4.5,\n      \"numReviews\": 12,\n      \"user\": \"507f1f77bcf86cd799439001\",\n      \"createdAt\": \"2024-01-10T08:15:00.000Z\",\n      \"updatedAt\": \"2024-01-15T10:30:00.000Z\"\n    }\n  ],\n  \"page\": 1,\n  \"pages\": 3\n}\n```\n\n**Errors:**\n- 400: Invalid query parameters\n\n**Notes:**\n- Default page size: 10 products per page\n- Keyword search uses case-insensitive regex matching on product name\n- Total pages calculated as: `Math.ceil(count / pageSize)`\n- Cursor-based pagination not implemented; uses offset/limit\n\n**Example requests:**\n```\nGET /api/products?pageNumber=2\nGET /api/products?keyword=headphones\nGET /api/products?keyword=wireless&pageNumber=1\n```\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "GET /api/products",
+    "chunk_index": 1
+  },
+  {
+    "text": "### GET /api/products/top\n\nRetrieve the top 3 highest-rated products in the catalog.\n\n**Auth:** Public  \n**Description:** Get top-rated products for featured display\n\n**Query Parameters:** None\n\n**Response 200 (Success):**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439011\",\n    \"name\": \"Premium Wireless Headphones\",\n    \"image\": \"/images/headphones-premium.jpg\",\n    \"description\": \"Best-selling wireless headphones with 5-star reviews\",\n    \"brand\": \"AudioTech\",\n    \"category\": \"Electronics\",\n    \"price\": 199.99,\n    \"countInStock\": 8,\n    \"rating\": 4.8,\n    \"numReviews\": 45,\n    \"user\": \"507f1f77bcf86cd799439001\"\n  }\n]\n```\n\n**Errors:** None (always returns array, may be empty if no products exist)\n\n**Notes:**\n- Returns maximum 3 products sorted by rating descending\n- Often used for \"Featured Products\" homepage section\n- Empty array returned if no products in catalog\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "GET /api/products/top",
+    "chunk_index": 2
+  },
+  {
+    "text": "### GET /api/products/:id\n\nRetrieve detailed information about a specific product.\n\n**Auth:** Public  \n**Description:** Get product details by product ID\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the product\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Wireless Headphones\",\n  \"image\": \"/images/headphones.jpg\",\n  \"description\": \"High-quality wireless headphones with noise cancellation\",\n  \"brand\": \"AudioTech\",\n  \"category\": \"Electronics\",\n  \"price\": 129.99,\n  \"countInStock\": 15,\n  \"rating\": 4.5,\n  \"numReviews\": 12,\n  \"reviews\": [\n    {\n      \"_id\": \"507f1f77bcf86cd799439021\",\n      \"name\": \"John Doe\",\n      \"rating\": 5,\n      \"comment\": \"Excellent product, highly recommend\",\n      \"user\": \"507f1f77bcf86cd799439001\",\n      \"createdAt\": \"2024-01-12T14:20:00.000Z\"\n    }\n  ],\n  \"user\": \"507f1f77bcf86cd799439001\",\n  \"createdAt\": \"2024-01-10T08:15:00.000Z\",\n  \"updatedAt\": \"2024-01-15T10:30:00.000Z\"\n}\n```\n\n**Errors:**\n- 404: Product not found (invalid ID or deleted product)\n\n**Notes:**\n- Includes complete reviews array with all review details\n- Rating is calculated average of all review ratings\n- numReviews is count of reviews array length\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "GET /api/products/:id",
+    "chunk_index": 3
+  },
+  {
+    "text": "### POST /api/products\n\nCreate a new product with default sample values. Admin only.\n\n**Auth:** Private/Admin  \n**Description:** Create new product entry with sample defaults\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**Request body:** None (uses defaults)\n\n**Response 201 (Created):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439099\",\n  \"name\": \"Sample name\",\n  \"image\": \"/images/sample.jpg\",\n  \"description\": \"Sample description\",\n  \"brand\": \"Sample brand\",\n  \"category\": \"Sample category\",\n  \"price\": 0,\n  \"countInStock\": 0,\n  \"rating\": 0,\n  \"numReviews\": 0,\n  \"reviews\": [],\n  \"user\": \"507f1f77bcf86cd799439001\",\n  \"createdAt\": \"2024-01-20T09:45:00.000Z\",\n  \"updatedAt\": \"2024-01-20T09:45:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n\n**Notes:**\n- Endpoint creates product with sample defaults for admin to populate\n- Price defaults to 0, should be updated immediately\n- Image defaults to sample placeholder image\n- User field set to authenticated admin's ID\n- Created product should be updated with actual details via PUT\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "POST /api/products",
+    "chunk_index": 4
+  },
+  {
+    "text": "### PUT /api/products/:id\n\nUpdate existing product details. Admin only.\n\n**Auth:** Private/Admin  \n**Description:** Modify product information\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the product\n\n**Request body:**\n```json\n{\n  \"name\": \"Updated Headphones\",\n  \"price\": 149.99,\n  \"description\": \"Premium wireless headphones with active noise cancellation\",\n  \"image\": \"/images/headphones-updated.jpg\",\n  \"brand\": \"AudioTech Pro\",\n  \"category\": \"Electronics\",\n  \"countInStock\": 20\n}\n```\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Updated Headphones\",\n  \"image\": \"/images/headphones-updated.jpg\",\n  \"description\": \"Premium wireless headphones with active noise cancellation\",\n  \"brand\": \"AudioTech Pro\",\n  \"category\": \"Electronics\",\n  \"price\": 149.99,\n  \"countInStock\": 20,\n  \"rating\": 4.5,\n  \"numReviews\": 12,\n  \"reviews\": [],\n  \"user\": \"507f1f77bcf86cd799439001\",\n  \"createdAt\": \"2024-01-10T08:15:00.000Z\",\n  \"updatedAt\": \"2024-01-20T11:25:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n- 404: Product not found\n\n**Notes:**\n- All fields in request body are replaced in database\n- Reviews array is not modified by this endpoint\n- Rating and numReviews are calculated from reviews, not directly updated\n- Updates trigger updatedAt timestamp modification\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "PUT /api/products/:id",
+    "chunk_index": 5
+  },
+  {
+    "text": "### DELETE /api/products/:id\n\nDelete a product from catalog. Admin only.\n\n**Auth:** Private/Admin  \n**Description:** Remove product from system\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the product\n\n**Response 200 (Success):**\n```json\n{\n  \"message\": \"Product removed\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n- 404: Product not found\n\n**Notes:**\n- Deletion is permanent\n- All associated reviews are lost\n- Product cannot be recovered after deletion\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "DELETE /api/products/:id",
+    "chunk_index": 6
+  },
+  {
+    "text": "### POST /api/products/:id/reviews\n\nSubmit a product review. Authenticated user.\n\n**Auth:** Private  \n**Description:** Add review to product (one per user)\n\n**Headers:**\n```\nAuthorization: Bearer {user-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the product\n\n**Request body:**\n```json\n{\n  \"rating\": 5,\n  \"comment\": \"Excellent quality and fast shipping\"\n}\n```\n\n**Response 201 (Created):**\n```json\n{\n  \"message\": \"Review added\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 404: Product not found\n- 400: Product already reviewed (user has existing review)\n\n**Notes:**\n- Rating must be provided (numeric value 1-5)\n- User can only submit one review per product\n- Submitting second review returns 400 error\n- Review includes reviewer's name from user account\n- Product rating and numReviews automatically recalculated\n- Rating calculation: average of all review ratings\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "POST /api/products/:id/reviews",
+    "chunk_index": 7
+  },
+  {
+    "text": "## Product Data Model\n\n| Field | Type | Description |\n|-------|------|-------------|\n| `_id` | ObjectId | Unique product identifier |\n| `name` | String | Product display name |\n| `image` | String | Product image URL path |\n| `description` | String | Detailed product description |\n| `brand` | String | Product brand/manufacturer |\n| `category` | String | Product category classification |\n| `price` | Number | Product price in currency units |\n| `countInStock` | Number | Available inventory quantity |\n| `rating` | Number | Average rating (0-5) calculated from reviews |\n| `numReviews` | Number | Count of total reviews |\n| `reviews` | Array | Array of review objects |\n| `user` | ObjectId | ID of admin who created product |\n| `createdAt` | Date | Product creation timestamp |\n| `updatedAt` | Date | Last modification timestamp |\n\n---",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "Product Data Model",
+    "chunk_index": 8
+  },
+  {
+    "text": "## Response Codes\n\n- 200: Successful request\n- 201: Resource created\n- 400: Invalid input or duplicate review\n- 401: Authentication failed or insufficient permissions\n- 404: Product not found",
+    "source": "api/products.md",
+    "category": "core",
+    "title": "Products API Reference",
+    "section": "Response Codes",
+    "chunk_index": 9
+  }
+]

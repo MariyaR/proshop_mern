@@ -1,0 +1,146 @@
+[
+  {
+    "text": "# Local Setup Runbook\n\n**Purpose:** Bootstrap proshop-mern development environment on a fresh machine.  \n**Audience:** Students, local development setup.  \n**Duration:** 10–15 minutes (including Docker container startup).",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Prerequisites\n\n- **Node.js** v14+ (check: `node --version`)\n- **npm** v6+ (comes with Node; check: `npm --version`)\n- **Docker Desktop** installed and running (for MongoDB)\n- **Git** (check: `git --version`)\n- **Text editor or IDE** (VS Code recommended)",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Prerequisites",
+    "chunk_index": 1
+  },
+  {
+    "text": "### 1. Clone Repository\n\n```bash\ngit clone <repository-url> proshop-mern\ncd proshop-mern\n```\n\nVerify you're in the root directory by checking for `package.json`:\n\n```bash\nls package.json  # Should print \"package.json\"\n```",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "1. Clone Repository",
+    "chunk_index": 2
+  },
+  {
+    "text": "### 2. Install Root Dependencies\n\n```bash\nnpm install\n```\n\nThis installs backend dependencies: `express`, `mongoose`, `bcryptjs`, `jsonwebtoken`, `dotenv`, etc.\n\n**Verify:** Check that `node_modules/` directory was created.",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "2. Install Root Dependencies",
+    "chunk_index": 3
+  },
+  {
+    "text": "### 3. Install Frontend Dependencies\n\n```bash\nnpm install --prefix frontend\n```\n\nThis installs React, Redux, and frontend build tools in `frontend/node_modules/`.",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "3. Install Frontend Dependencies",
+    "chunk_index": 4
+  },
+  {
+    "text": "### 4. Create Environment File\n\nCopy the template:\n\n```bash\ncp .env.example .env\n```\n\nEdit `.env` with your values:\n\n```\nNODE_ENV=development\nPORT=5001\nMONGO_URI=mongodb://localhost:27017/proshop\nJWT_SECRET=your_super_secret_key_here\nPAYPAL_CLIENT_ID=sb\n```\n\n**Note:** For local dev:\n- **PORT:** 5001 (5000 often conflicts with macOS Control Center).\n- **MONGO_URI:** Use `localhost:27017` for local Docker MongoDB.\n- **JWT_SECRET:** Any non-empty string for dev; rotate for production.\n- **PAYPAL_CLIENT_ID:** `sb` for PayPal sandbox (safe for testing).",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "4. Create Environment File",
+    "chunk_index": 5
+  },
+  {
+    "text": "### 5. Start MongoDB Container\n\n```bash\nnpm run mongo:up\n```\n\nThis pulls and runs `mongo:7` container via Docker Compose.\n\n**Verify container is running:**\n\n```bash\ndocker ps | grep proshop-mongo\n```\n\nExpected output: Container named `proshop-mongo` with port mapping `27017:27017`.",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "5. Start MongoDB Container",
+    "chunk_index": 6
+  },
+  {
+    "text": "### 6. Seed Database\n\n```bash\nnpm run data:import\n```\n\nThis script (`backend/seeder.js`) populates the database with sample users, products, and empty orders.\n\n**Verify import succeeded:** You should see green output: `Data Imported!`\n\nIf import fails, check:\n- MongoDB container is running (`npm run mongo:up`)\n- `.env` file has correct `MONGO_URI`\n- No network errors blocking localhost:27017",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "6. Seed Database",
+    "chunk_index": 7
+  },
+  {
+    "text": "### 7. Start Development Servers\n\n**Option A: Run Both Backend + Frontend Together**\n\n```bash\nnpm run dev\n```\n\nThis runs `concurrently` — backend on http://localhost:5001 and frontend on http://localhost:3000.\n\n**Option B: Run Separately (for debugging)**\n\nTerminal 1 — Backend:\n```bash\nnpm run server\n```\n\nTerminal 2 — Frontend:\n```bash\nnpm run client\n```",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "7. Start Development Servers",
+    "chunk_index": 8
+  },
+  {
+    "text": "### 8. Verify Application\n\n**Check backend:** Open terminal and curl:\n\n```bash\ncurl http://localhost:5001/api/products\n```\n\nExpected: JSON array of products.\n\n**Check frontend:** Open browser:\n\n```\nhttp://localhost:3000\n```\n\nExpected: ProShop homepage with product grid, navbar, and shopping cart icon.\n\n**Test basic flow:**\n1. Click a product → view product details page.\n2. Add to cart → item appears in cart (top-right corner).\n3. Go to cart → see items with quantity selector.\n4. Proceed to checkout → login or register.\n5. Complete shipping and payment forms (PayPal sandbox accepted).",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "8. Verify Application",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Issue: `EADDRINUSE :::5001` (Port Already In Use)\n\n**Solution:** Either:\n1. Kill the process: `lsof -ti:5001 | xargs kill -9`\n2. Change PORT in `.env` to an unused port (e.g., 5002).",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Issue: `EADDRINUSE :::5001` (Port Already In Use)",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Issue: `MongoServerError: connect ECONNREFUSED 127.0.0.1:27017`\n\n**Solution:**\n1. Ensure Docker Desktop is running.\n2. Start MongoDB: `npm run mongo:up`\n3. Wait 3–5 seconds for container to be ready.\n4. Check: `docker ps | grep mongo`",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Issue: `MongoServerError: connect ECONNREFUSED 127.0.0.1:27017`",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Issue: `Cannot find module 'colors'`\n\n**Solution:** Reinstall dependencies:\n\n```bash\nrm -rf node_modules\nnpm install\n```",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Issue: `Cannot find module 'colors'`",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Issue: Frontend shows blank page or 404 errors\n\n**Solution:**\n1. Backend server must be running on the correct port (check PORT in `.env`).\n2. Check frontend `package.json` proxy matches backend PORT.\n3. Clear browser cache: `Cmd+Shift+R` (macOS) or `Ctrl+Shift+R` (Windows/Linux).",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Issue: Frontend shows blank page or 404 errors",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Issue: `openssl` legacy provider error\n\n**Solution:** Already handled in `package.json` via `NODE_OPTIONS=--openssl-legacy-provider` for Node.js 16+.",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Issue: `openssl` legacy provider error",
+    "chunk_index": 14
+  },
+  {
+    "text": "## Useful Commands Reference\n\n| Command | What It Does |\n|---------|-------------|\n| `npm run dev` | Start backend + frontend concurrently |\n| `npm run server` | Start backend only (nodemon watch) |\n| `npm run client` | Start frontend only (React dev server) |\n| `npm run mongo:up` | Start MongoDB in Docker |\n| `npm run mongo:down` | Stop MongoDB container |\n| `npm run data:import` | Seed database with sample data |\n| `npm run data:destroy` | Wipe all users, products, orders |\n| `npm run data:import-extra` | Import additional seed data |",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Useful Commands Reference",
+    "chunk_index": 15
+  },
+  {
+    "text": "## Next Steps\n\nOnce local setup is complete:\n1. Explore the codebase: backend routes in `backend/routes/`, frontend components in `frontend/src/components/`.\n2. Read API documentation in project docs (if provided).\n3. Start modifying features or adding new endpoints.\n4. Run tests (if configured) or manually test via browser/curl.",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Next Steps",
+    "chunk_index": 16
+  },
+  {
+    "text": "## Shutdown\n\nTo cleanly shut down:\n\n```bash\n# Stop backend + frontend (Ctrl+C in terminal)\n# Stop MongoDB container:\nnpm run mongo:down\n```\n\nThis prevents port conflicts on the next startup.\n\n---\n\n**Last updated:** M3 curriculum.  \n**Questions?** Check `.env.example` or `backend/config/db.js` for MongoDB connection options.",
+    "source": "runbooks/local-setup.md",
+    "category": "core",
+    "title": "Stop MongoDB container:",
+    "section": "Shutdown",
+    "chunk_index": 17
+  }
+]

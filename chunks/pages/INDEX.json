@@ -1,0 +1,50 @@
+[
+  {
+    "text": "# ProShop MERN UI Walkthrough Index\n\nComplete documentation of all user-facing screens in the ProShop e-commerce application.",
+    "source": "pages/INDEX.md",
+    "category": "core",
+    "title": "ProShop MERN UI Walkthrough Index",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Public Pages\n\n- **[home.md](home.md)** – Product listing with search, categories, and pagination\n- **[product.md](product.md)** – Product details, reviews, and purchase interface\n- **[login.md](login.md)** – User authentication screen\n- **[register.md](register.md)** – New user account creation",
+    "source": "pages/INDEX.md",
+    "category": "core",
+    "title": "ProShop MERN UI Walkthrough Index",
+    "section": "Public Pages",
+    "chunk_index": 1
+  },
+  {
+    "text": "## Checkout Flow (Authenticated)\n\n- **[cart.md](cart.md)** – Shopping cart management\n- **[shipping.md](shipping.md)** – Shipping address entry\n- **[payment.md](payment.md)** – Payment method selection\n- **[place-order.md](place-order.md)** – Order review and confirmation",
+    "source": "pages/INDEX.md",
+    "category": "core",
+    "title": "ProShop MERN UI Walkthrough Index",
+    "section": "Checkout Flow (Authenticated)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## User Pages (Authenticated)\n\n- **[order.md](order.md)** – Order confirmation with PayPal and delivery tracking\n- **[profile.md](profile.md)** – User profile management and order history",
+    "source": "pages/INDEX.md",
+    "category": "core",
+    "title": "ProShop MERN UI Walkthrough Index",
+    "section": "User Pages (Authenticated)",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Admin Pages (Admin Only)\n\n- **[admin-users.md](admin-users.md)** – User management list\n- **[admin-user-edit.md](admin-user-edit.md)** – User profile editor\n- **[admin-products.md](admin-products.md)** – Product catalog management\n- **[admin-product-edit.md](admin-product-edit.md)** – Product editor with image upload\n- **[admin-orders.md](admin-orders.md)** – Order management dashboard",
+    "source": "pages/INDEX.md",
+    "category": "core",
+    "title": "ProShop MERN UI Walkthrough Index",
+    "section": "Admin Pages (Admin Only)",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Statistics\n\n- **Total files:** 15 markdown documents\n- **Total words:** 4,543\n- **Total lines:** 627\n- **Total size:** 60 KB\n- **Format:** Markdown with standardized sections (Route, Access, UI Description, State, API, Components, Actions, Edge Cases)",
+    "source": "pages/INDEX.md",
+    "category": "core",
+    "title": "ProShop MERN UI Walkthrough Index",
+    "section": "Statistics",
+    "chunk_index": 5
+  }
+]

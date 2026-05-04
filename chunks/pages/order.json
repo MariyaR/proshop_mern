@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAuthenticated users only (redirects to login if not logged in). Users can typically view only their own orders (backend enforces this).",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nDisplays complete order details split across two columns. Left side shows shipping information (name, email, address), payment method, order status (paid/unpaid, delivered/undelivered with dates or red X icons), and itemized order items. Right side displays an order summary card with price breakdown (items, shipping, tax, total).\n\nIf the order is unpaid, a PayPal payment button is displayed. If user is an admin and the order is paid but not delivered, a \"Mark As Delivered\" button is shown.",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `orderDetails` slice: `loading`, `error`, `order` object\n- `orderPay` slice: `loading`, `success` for payment processing\n- `orderDeliver` slice: `loading`, `success` for delivery marking\n- `userLogin` slice: `userInfo` (used for admin check)",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount**: `GET /api/orders/:id` via `getOrderDetails()` action\n- **On PayPal callback**: `PUT /api/orders/:id/pay` with paymentResult via `payOrder()` action\n- **On \"Mark As Delivered\" click**: `PUT /api/orders/:id/deliver` via `deliverOrder()` action\n- **PayPal SDK**: Dynamically loads PayPal script if not already loaded",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **Message** – status messages (delivery status, payment status, errors)\n- **Loader** – loading spinner during data fetch or payment processing\n- **Image** – product images in order items\n- **Card** – order summary card\n- **PayPalButton** – React PayPal Button v2 component for payment (conditionally rendered)\n- **Button** – \"Mark As Delivered\" button (admin only, conditional)",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Complete PayPal payment** (if unpaid): PayPal button triggers `successPaymentHandler()`\n- **Mark As Delivered** (admin only): Dispatches `deliverOrder()` action\n- **Click product link**: Navigates to product detail page\n- **Navigate away**: Order data fetched fresh on return (safety measure)",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- User not authenticated: Redirected to login on mount\n- Order not found: Error message displayed\n- Order already paid: PayPal button not shown\n- Order already delivered: \"Mark As Delivered\" button not shown\n- User is not admin: \"Mark As Delivered\" button never shown\n- PayPal SDK loading: Loader shown while SDK initializes\n- Payment error: Error message displayed below payment button\n- Items price calculation: Recalculated on render (not stored in order object)",
+    "source": "pages/order.md",
+    "category": "core",
+    "title": "Order Confirmation Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

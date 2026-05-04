@@ -1,0 +1,66 @@
+[
+  {
+    "text": "## Route\n`/register`, `/register?redirect=[page]` (optional redirect parameter)",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "Route",
+    "chunk_index": 0
+  },
+  {
+    "text": "## Access\nPublic. If already logged in, user is immediately redirected to the redirect URL or home.",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "Access",
+    "chunk_index": 1
+  },
+  {
+    "text": "## What Users See\nA centered form container with heading \"Sign Up\" containing name, email, password, and confirm password input fields. A submit button labeled \"Register\" is below the form. Validation error (password mismatch) appears as a red alert. Below the form is a link to the login page.",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "What Users See",
+    "chunk_index": 2
+  },
+  {
+    "text": "## State (Redux)\n- `userRegister` slice: `loading`, `error`, `userInfo` object (contains user data and token if registration succeeds)",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "State (Redux)",
+    "chunk_index": 3
+  },
+  {
+    "text": "## API Calls\n- **On form submit**: `POST /api/users/register` with `{ name, email, password }` via `register()` action\n- Response includes `userInfo` object with token, user is immediately logged in after successful registration",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "API Calls",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Components\n- **FormContainer** – centered form wrapper component\n- **Message** – error alert display (password mismatch or API error)\n- **Loader** – loading spinner during registration\n- **Form** (Bootstrap) – text and password input fields with labels",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "Components",
+    "chunk_index": 5
+  },
+  {
+    "text": "## User Actions\n- **Enter name, email, passwords**: Updates local state\n- **Click \"Register\"**: Client validates password match; if OK, dispatches register action\n- **Click \"Login\"**: Navigates to login page (with redirect if applicable)",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "User Actions",
+    "chunk_index": 6
+  },
+  {
+    "text": "## Edge Cases\n- Passwords don't match: Local validation message shown, API call not made\n- Missing fields: Form submission occurs, backend returns validation error\n- Email already registered: API error displayed\n- Loading state: Form fields remain enabled but should be disabled (UX issue)\n- Redirect parameter missing: Defaults to home page (`/`)\n- User already logged in: Redirects immediately before form renders\n- Name field: Accepts any text (no email format validation)\n- Auto-login after registration: User is logged in after successful signup",
+    "source": "pages/register.md",
+    "category": "core",
+    "title": "Register Screen",
+    "section": "Edge Cases",
+    "chunk_index": 7
+  }
+]

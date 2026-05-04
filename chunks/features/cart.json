@@ -1,0 +1,258 @@
+[
+  {
+    "text": "# Cart Features — ProShop MERN\n\nПокрывает добавление товаров, управление количеством, удаление, персистентность и расчёт итогов.\n\n---",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "### Назначение\nДобавление товара в корзину с выбранным количеством. Не требует авторизации — товар добавляется в localStorage немедленно. Persona: любой посетитель, нашедший товар.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 1
+  },
+  {
+    "text": "### User flow\n1. На странице товара (`/product/:id`) пользователь выбирает qty из dropdown.\n2. Кликает «Add To Cart».\n3. `addToCartHandler` формирует URL `/cart/:id?qty=N` и вызывает `history.push`.\n4. CartScreen монтируется, `useEffect` видит `productId` в params и qty в location.search.\n5. Диспатчит `addToCart(productId, qty)`.\n6. Action делает GET-запрос на `/api/products/:id` для получения актуальных данных товара.\n7. Диспатчит `CART_ADD_ITEM`, reducer обновляет `cartItems`, action сохраняет в localStorage.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `ProductScreen.js` — `addToCartHandler` только навигирует, не диспатчит.\n- **Screen:** `CartScreen.js` — `useEffect` читает `match.params.id` и `location.search`.\n- **Action:** `cartActions.addToCart(id, qty)`:\n  ```js\n  const { data } = await axios.get(`/api/products/${id}`)\n  dispatch({ type: CART_ADD_ITEM, payload: { product, name, image, price, countInStock, qty } })\n  localStorage.setItem('cartItems', JSON.stringify(getState().cart.cartItems))\n  ```\n- **Reducer:** `cartReducer` обрабатывает `CART_ADD_ITEM`:\n  - Если товар уже в корзине → обновляет qty (replace).\n  - Если нового нет → append в массив.\n- **Store init:** `store.js` инициализирует `cart.cartItems` из `localStorage['cartItems']` при загрузке.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 3
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products/:id` — публичный, вызывается внутри action для получения цены и наличия.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Edge cases\n- Товар уже в корзине → qty перезаписывается (не суммируется). Прибавить к текущему нельзя стандартным путём.\n- `countInStock` получается актуальным в момент добавления — но не синхронизируется при последующих изменениях.\n- `qty` из URL: `Number(location.search.split('=')[1])` — если URL некорректен, `Number(undefined)=NaN`.\n- Добавление с qty > countInStock невозможно через UI (dropdown ограничен), но API-запрос напрямую не защищён от этого.\n- Открытие `/cart` без productId в params → useEffect не диспатчит, просто показывает текущую корзину.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Product Detail (productId + qty через URL), Product API (актуальные данные).\n- От этой фичи зависят: Cart Summary (totals), Checkout flow.\n\n---",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Назначение\nИзменение количества конкретного товара прямо в корзине. Persona: покупатель, решивший взять больше или меньше единиц.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 7
+  },
+  {
+    "text": "### User flow\n1. На странице `/cart` пользователь видит список товаров.\n2. Рядом с каждым товаром — dropdown с текущим qty.\n3. Меняет значение в dropdown.\n4. `onChange` немедленно диспатчит `addToCart(item.product, Number(e.target.value))`.\n5. Корзина обновляется без перезагрузки страницы, localStorage синхронизируется.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 8
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `CartScreen.js` — inline onChange:\n  ```jsx\n  onChange={(e) => dispatch(addToCart(item.product, Number(e.target.value)))}\n  ```\n- **Action:** та же `addToCart` — делает новый GET `/api/products/:id` для актуальности данных.\n- **Reducer:** `CART_ADD_ITEM` с существующим product ID → заменяет item в массиве.\n- Dropdown range: от 1 до `item.countInStock` — ограничен доступным остатком.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 9
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/products/:id` — вызывается при каждом изменении dropdown.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 10
+  },
+  {
+    "text": "### Edge cases\n- Каждое изменение dropdown = новый HTTP-запрос → потенциально избыточная нагрузка при частых изменениях (debounce не реализован).\n- Если между добавлением и обновлением `countInStock` изменился (другой покупатель купил) → актуальное значение придёт в ответе.\n- `Number(e.target.value)` — гарантирует числовой тип qty.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `addToCart` action (переиспользуется), Product API.\n- Обновляет те же reducers и localStorage что и Feature 1.\n\n---",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Назначение\nУдаление конкретного товара из корзины. Persona: покупатель, передумавший насчёт товара.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 13
+  },
+  {
+    "text": "### User flow\n1. В списке корзины рядом с каждым товаром — кнопка с иконкой мусорки.\n2. Клик → `removeFromCartHandler(item.product)`.\n3. Товар мгновенно исчезает из списка, subtotal пересчитывается.\n4. localStorage обновляется.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 14
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `CartScreen.js` — `removeFromCartHandler(id)` диспатчит `removeFromCart(id)`.\n- **Action:** `cartActions.removeFromCart(id)`:\n  ```js\n  dispatch({ type: CART_REMOVE_ITEM, payload: id })\n  localStorage.setItem('cartItems', JSON.stringify(getState().cart.cartItems))\n  ```\n- **Reducer:** фильтрует массив: `cartItems.filter(x => x.product !== action.payload)`.\n- Нет подтверждения (`window.confirm`) — удаление немедленное.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 15
+  },
+  {
+    "text": "### API endpoints\n- Нет серверных запросов. Только Redux + localStorage.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Edge cases\n- Нет отмены удаления — undo не реализован.\n- После удаления последнего товара: корзина показывает `\"Your cart is empty\"` с ссылкой «Go Back».\n- Кнопка «Proceed To Checkout» disabled при `cartItems.length === 0` — нельзя чекаутить пустую корзину.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Cart state.\n- Влияет на: Cart totals (пересчитываются в JSX реактивно).\n\n---",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Назначение\nКорзина сохраняется между сессиями браузера — товары не теряются при обновлении страницы или закрытии вкладки. Persona: покупатель, возвращающийся позже.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Технический impl\n- **Запись:** каждая cart action (`addToCart`, `removeFromCart`) вызывает `localStorage.setItem('cartItems', JSON.stringify(getState().cart.cartItems))`.\n- **Восстановление:** `store.js`:\n  ```js\n  const cartItemsFromStorage = localStorage.getItem('cartItems')\n    ? JSON.parse(localStorage.getItem('cartItems'))\n    : []\n  const initialState = { cart: { cartItems: cartItemsFromStorage, ... } }\n  ```\n- Аналогично сохраняются: `shippingAddress`, `paymentMethod`.\n- **Logout:** `userActions.logout()` очищает `cartItems`, `shippingAddress`, `paymentMethod` из localStorage.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Edge cases\n- Устаревшие данные: если товар был удалён из базы после добавления в корзину → при попытке checkout `createOrder` может получить невалидный product ID.\n- Цена в localStorage зафиксирована в момент добавления — если цена изменилась на сервере, корзина показывает старую цену.\n- `countInStock` в localStorage может устареть — dropdown позволяет выбрать qty больше реального наличия.\n- Кастомный `localStorage` overflow: при большом количестве товаров или больших images URL строка может превысить 5MB (редко).",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 21
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: cart reducers (`CART_ADD_ITEM`, `CART_REMOVE_ITEM`, `CART_SAVE_SHIPPING_ADDRESS`, `CART_SAVE_PAYMENT_METHOD`, `CART_CLEAR_ITEMS`).\n- `CART_CLEAR_ITEMS` диспатчится после успешного создания заказа (`createOrder` action).\n\n---",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Назначение\nОтображение итоговой суммы в правой колонке корзины: количество всех товаров и итоговая сумма. Persona: покупатель перед чекаутом.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 23
+  },
+  {
+    "text": "### User flow\n1. Пользователь видит правую карточку с subtotal.\n2. `Subtotal (N) items — $XX.XX` обновляется реактивно при любом изменении корзины.\n3. Кнопка «Proceed To Checkout» → `history.push('/login?redirect=shipping')`.\n4. Если залогинен — редирект идёт сразу на `/shipping` (redirect query param обрабатывается LoginScreen).",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 24
+  },
+  {
+    "text": "### Технический impl\n- **Subtotal count:** `cartItems.reduce((acc, item) => acc + item.qty, 0)` — сумма qty всех позиций.\n- **Subtotal price:** `cartItems.reduce((acc, item) => acc + item.qty * item.price, 0).toFixed(2)`.\n- Расчёт происходит в JSX `CartScreen.js` — нет отдельного selector/мемоизации.\n- `checkoutHandler` → `history.push('/login?redirect=shipping')` — всегда перебрасывает через login; если уже залогинен, LoginScreen немедленно редиректит на `/shipping`.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 25
+  },
+  {
+    "text": "### Edge cases\n- Floating point ошибки: `0.1 * 3 = 0.30000000000000004` → `.toFixed(2)` корректирует отображение, но не внутреннее значение.\n- Кнопка disabled при `cartItems.length === 0` — но условие `cart.cartItems === 0` технически некорректно (сравнение массива с числом всегда false!); это баг — кнопка не блокируется при пустой корзине (учебный артефакт).",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 26
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Cart state (`cartItems`).\n- Передаёт управление Checkout flow.\n\n---",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 27
+  },
+  {
+    "text": "### Назначение\nАвтоматическая очистка корзины после успешного оформления заказа. Persona: покупатель, завершивший покупку.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 28
+  },
+  {
+    "text": "### Технический impl\n- **Триггер:** в `createOrder` action после успешного POST `/api/orders`:\n  ```js\n  dispatch({ type: CART_CLEAR_ITEMS })\n  localStorage.removeItem('cartItems')\n  ```\n- **Reducer:** `CART_CLEAR_ITEMS` → `{ ...state, cartItems: [] }`.\n- shippingAddress и paymentMethod **не очищаются** — остаются для следующего заказа.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Edge cases\n- Если POST `/api/orders` вернул ошибку → `CART_CLEAR_ITEMS` не диспатчится, корзина сохраняется.\n- После redirect на `/order/:id` пользователь не может вернуться к корзине с теми же товарами.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 30
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `createOrder` action (orderActions).\n- Обеспечивает чистое состояние для следующей сессии покупки.",
+    "source": "features/cart.md",
+    "category": "core",
+    "title": "Cart Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 31
+  }
+]

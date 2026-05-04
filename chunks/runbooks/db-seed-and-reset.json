@@ -1,0 +1,178 @@
+[
+  {
+    "text": "# Database Seed and Reset Runbook\n\n**Purpose:** Manage database state through seeding sample data, resetting production data safely, and performing backups.  \n**Audience:** Developers, QA, database administrators.  \n**Duration:** 5–30 minutes depending on operation.  \n**Scope:** Covers local development and production scenarios.",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "### Seed Operations Available\n\n| Command | Purpose | Safety |\n|---------|---------|--------|\n| `npm run data:import` | Load sample users, products, empty orders (seed) | **Safe** — idempotent, designed for dev/test |\n| `npm run data:destroy` | Wipe all users, products, orders | **Dangerous** — irreversible in production |\n| `npm run data:import-extra` | Load additional test fixtures | **Safe** — additive only |",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Seed Operations Available",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Database Schema\n\nSeed data includes:\n- **Users:** 1 admin user (email: `admin@example.com`) + 2 customer users.\n- **Products:** 8–10 sample products (laptops, phones, monitors, etc.) with prices, images, categories.\n- **Orders:** Empty (created on demand during testing).",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Database Schema",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Workflow 1: Fresh Start (After Clone or Git Checkout)\n\nBring codebase to known-good state:\n\n```bash\n# 1. Ensure MongoDB is running\nnpm run mongo:up\n\n# 2. Wait 3 seconds for container startup\nsleep 3\n\n# 3. Verify connection\ndocker ps | grep mongo  # Should show proshop-mongo container\n\n# 4. Seed database\nnpm run data:import\n\n# 5. Expected output:\n# Data Imported!\n# (Process will exit with code 0)\n```\n\nVerify seed succeeded:\n\n```bash\n# Query MongoDB directly\ndocker exec proshop-mongo mongosh proshop --eval \\\n  \"db.users.countDocuments()\" \n\n# Expected: 3 (admin + 2 customers)\n\ndocker exec proshop-mongo mongosh proshop --eval \\\n  \"db.products.countDocuments()\"\n\n# Expected: ~10\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Workflow 1: Fresh Start (After Clone or Git Checkout)",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Workflow 2: Reset Between Test Runs\n\nYou created test data and want to start fresh:\n\n```bash\n# Destroy all data\nnpm run data:destroy\n\n# Wait 2 seconds\nsleep 2\n\n# Reimport seed\nnpm run data:import\n\n# Restart app (if already running)\n# Ctrl+C, then npm run dev\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Workflow 2: Reset Between Test Runs",
+    "chunk_index": 4
+  },
+  {
+    "text": "### ⚠️ WARNING: Production Destruction\n\n**DO NOT RUN `npm run data:destroy` IN PRODUCTION without explicit approval and a backup.**\n\nProduction data is real. Accidental loss = revenue loss, customer trust damage, legal issues.",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "⚠️ WARNING: Production Destruction",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Pre-Production-Reset Checklist\n\nBefore any production reset:\n\n- [ ] **Database backup taken** (see Backup Procedure below).\n- [ ] **Backup verified restorable** (test restore to staging).\n- [ ] **Stakeholder approval obtained** (manager, product lead).\n- [ ] **Customer notification sent** (if major data wipe, e.g., all orders).\n- [ ] **Maintenance window scheduled** (inform support team).\n- [ ] **Rollback plan documented** (how to restore from backup if things go wrong).\n- [ ] **Post-reset verification plan** (sanity checks to run after restore).",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Pre-Production-Reset Checklist",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Full Database Backup (MongoDB)\n\n#### Option 1: Using mongodump (Recommended)\n\n```bash\n# Backup MongoDB to local directory\nmongodump --uri \"mongodb+srv://<user>:<password>@<cluster>/proshop\" \\\n          --out ./backup_$(date +%Y%m%d_%H%M%S)\n\n# Output: \n# backup_20240415_142030/\n#   proshop/\n#     users.bson\n#     products.bson\n#     orders.bson\n#     ... (metadata files)\n```\n\n**To restore from backup:**\n\n```bash\nmongorestore --uri \"mongodb+srv://<user>:<password>@<cluster>/proshop\" \\\n             ./backup_20240415_142030/proshop\n```\n\n#### Option 2: Using MongoDB Atlas GUI\n\n1. Log in to MongoDB Atlas dashboard.\n2. Click \"Database\" → select your cluster → \"Backup\" tab.\n3. Click \"Take On-Demand Snapshot\" → wait 5–10 minutes.\n4. Once complete, click the snapshot → \"Restore\" → choose target (same cluster or new).\n\n**Advantage:** No local storage required, managed by MongoDB.  \n**Disadvantage:** Slower, requires GUI access.\n\n#### Option 3: Export Collections as JSON\n\n```bash\n# Export users collection\nmongoexport --uri \"mongodb+srv://<user>:<password>@<cluster>/proshop\" \\\n            --collection users \\\n            --out users_backup.json\n\n# Export products collection\nmongoexport --uri \"mongodb+srv://<user>:<password>@<cluster>/proshop\" \\\n            --collection products \\\n            --out products_backup.json\n\n# Export orders collection\nmongoexport --uri \"mongodb+srv://<user>:<password>@<cluster>/proshop\" \\\n            --collection orders \\\n            --out orders_backup.json\n```\n\n**To restore:**\n\n```bash\nmongoimport --uri \"mongodb+srv://<user>:<password>@<cluster>/proshop\" \\\n            --collection users \\\n            --file users_backup.json\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Full Database Backup (MongoDB)",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Admin User (Auto-Created)\n\n```javascript\n{\n  name: \"Admin User\",\n  email: \"admin@example.com\",\n  password: \"123456\",        // Hashed via bcrypt in seeder\n  isAdmin: true,\n  createdAt: \"2024-04-15T...\",\n  updatedAt: \"2024-04-15T...\"\n}\n```\n\nLogin credentials for testing checkout flows with admin privileges.",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Admin User (Auto-Created)",
+    "chunk_index": 8
+  },
+  {
+    "text": "### Sample Products\n\nExample seeded products:\n\n```javascript\n[\n  {\n    name: \"Airpods Wireless Bluetooth Headphones\",\n    image: \"/images/airpods.jpg\",\n    description: \"Bluetooth wireless headphones\",\n    brand: \"Apple\",\n    category: \"Electronics\",\n    price: 89.99,\n    countInStock: 10,\n    rating: 4.5,\n    numReviews: 12,\n    user: \"<admin-user-id>\"\n  },\n  {\n    name: \"iPhone 15 Pro Max\",\n    image: \"/images/iphone15.jpg\",\n    description: \"Latest Apple smartphone\",\n    brand: \"Apple\",\n    category: \"Electronics\",\n    price: 1199.99,\n    countInStock: 5,\n    rating: 4.8,\n    numReviews: 45,\n    user: \"<admin-user-id>\"\n  }\n  // ... 8–10 more products\n]\n```\n\nTo view seeded products:\n\n```bash\ncurl http://localhost:5001/api/products | jq '.[] | {name, price, brand}'\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Sample Products",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Customer Test Users\n\n```javascript\n{\n  name: \"John Doe\",\n  email: \"john@example.com\",\n  password: \"123456\",\n  isAdmin: false\n},\n{\n  name: \"Jane Smith\",\n  email: \"jane@example.com\",\n  password: \"123456\",\n  isAdmin: false\n}\n```\n\nUse these to test customer checkout flows without admin privileges.",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Customer Test Users",
+    "chunk_index": 10
+  },
+  {
+    "text": "## Seeding Custom Data\n\nIf you want to seed custom test data (e.g., 100 products, specific categories):",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Seeding Custom Data",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Step 1: Create Seed File\n\n```javascript\n// backend/seedCustom.js\nimport mongoose from 'mongoose'\nimport dotenv from 'dotenv'\nimport colors from 'colors'\nimport User from './models/userModel.js'\nimport Product from './models/productModel.js'\nimport connectDB from './config/db.js'\n\ndotenv.config()\nconnectDB()\n\nconst customProducts = [\n  {\n    name: \"Custom Product 1\",\n    brand: \"TestBrand\",\n    category: \"TestCategory\",\n    description: \"A custom test product\",\n    price: 99.99,\n    countInStock: 20,\n    rating: 0,\n    numReviews: 0,\n  },\n  // ... more products\n]\n\nconst importCustomData = async () => {\n  try {\n    const adminUser = await User.findOne({ email: 'admin@example.com' })\n    \n    const productsWithUser = customProducts.map(p => ({\n      ...p,\n      user: adminUser._id\n    }))\n\n    await Product.insertMany(productsWithUser)\n    console.log(`Imported ${productsWithUser.length} custom products`.green.inverse)\n    process.exit()\n  } catch (error) {\n    console.error(`${error}`.red.inverse)\n    process.exit(1)\n  }\n}\n\nimportCustomData()\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Step 1: Create Seed File",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Step 2: Add NPM Script\n\nEdit `package.json`:\n\n```json\n{\n  \"scripts\": {\n    \"data:import-custom\": \"node backend/seedCustom.js\"\n  }\n}\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Step 2: Add NPM Script",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Step 3: Run Custom Seed\n\n```bash\nnpm run data:import-custom\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Step 3: Run Custom Seed",
+    "chunk_index": 14
+  },
+  {
+    "text": "## Seeding with Production-Like Data\n\nFor staging/performance testing, you might want realistic data volumes:\n\n```javascript\n// backend/seedLarge.js\n// Generate 1000 products with varied attributes\n\nconst generateLargeDataset = async (productCount = 1000) => {\n  const products = []\n  const categories = ['Electronics', 'Books', 'Clothing', 'Sports', 'Home']\n  const brands = ['Brand A', 'Brand B', 'Brand C', 'Brand D']\n\n  for (let i = 1; i <= productCount; i++) {\n    products.push({\n      name: `Product ${i}`,\n      brand: brands[i % brands.length],\n      category: categories[i % categories.length],\n      description: `Description for product ${i}`,\n      price: Math.random() * 500 + 10,  // Random price $10–$510\n      countInStock: Math.floor(Math.random() * 100),\n      rating: Math.random() * 5,\n      numReviews: Math.floor(Math.random() * 50),\n    })\n  }\n\n  const adminUser = await User.findOne({ email: 'admin@example.com' })\n  const productsWithUser = products.map(p => ({ ...p, user: adminUser._id }))\n\n  await Product.insertMany(productsWithUser)\n  console.log(`Created ${productCount} products for load testing`.green.inverse)\n  process.exit()\n}\n\ngenerateLargeDataset(1000)\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Seeding with Production-Like Data",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Check Database Size\n\n```bash\n# Connect to MongoDB and check database size\ndocker exec proshop-mongo mongosh proshop --eval \\\n  \"db.stats()\" | grep dataSize\n\n# Output shows size in bytes\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Check Database Size",
+    "chunk_index": 16
+  },
+  {
+    "text": "### View Collection Counts\n\n```bash\ndocker exec proshop-mongo mongosh proshop --eval \\\n  \"print('Users:', db.users.countDocuments()); \\\n   print('Products:', db.products.countDocuments()); \\\n   print('Orders:', db.orders.countDocuments())\"\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "View Collection Counts",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Find Orphaned Data\n\nOrders without a valid user reference (data integrity check):\n\n```bash\ndocker exec proshop-mongo mongosh proshop --eval \\\n  \"db.orders.aggregate([ \\\n     { \\$lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user_data' } }, \\\n     { \\$match: { user_data: { \\$eq: [] } } }, \\\n     { \\$project: { _id: 1, createdAt: 1 } } \\\n   ])\"\n```\n\nIf found, these are orphaned orders (user deleted but order remains). You may want to remove them:\n\n```bash\ndocker exec proshop-mongo mongosh proshop --eval \\\n  \"db.orders.deleteMany({ user: null })\"\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Find Orphaned Data",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Issue: `npm run data:import` hangs or times out\n\n**Cause:** MongoDB not running or network unreachable.\n\n**Fix:**\n```bash\nnpm run mongo:down\nsleep 2\nnpm run mongo:up\nsleep 3\nnpm run data:import\n```",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Issue: `npm run data:import` hangs or times out",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Issue: `Seed succeeded but no products in UI`\n\n**Cause:** Frontend cached old data.\n\n**Fix:**\n1. Hard-refresh browser: `Cmd+Shift+R` (macOS) or `Ctrl+Shift+R` (Windows).\n2. Clear Redux state (if using Redux DevTools, dispatch reset action).\n3. Check backend logs: `heroku logs --tail` (if production) or terminal (if local).",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Issue: `Seed succeeded but no products in UI`",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Issue: Production data restore failed\n\n**Worst case:** You restored from an incorrect backup or restore failed midway.\n\n**Recovery:**\n1. Stop all application traffic (maintenance mode).\n2. Take another backup (of the broken state) for post-mortem analysis.\n3. Restore from a known-good earlier backup.\n4. Verify data integrity (check counts, sample documents).\n5. Bring app back online.\n\n---\n\n**Last updated:** M3 curriculum.  \n**Critical:** Always test backup restoration in staging before relying on backups for production recovery.",
+    "source": "runbooks/db-seed-and-reset.md",
+    "category": "core",
+    "title": "Output shows size in bytes",
+    "section": "Issue: Production data restore failed",
+    "chunk_index": 21
+  }
+]

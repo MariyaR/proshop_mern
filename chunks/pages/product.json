@@ -1,0 +1,50 @@
+[
+  {
+    "text": "## What Users See\nA detailed product page showing a large product image on the left, product metadata (name, rating, description, price) in the center, and a purchase card on the right with pricing summary and \"Add To Cart\" button.\n\nBelow the purchase section, a reviews area displays existing customer reviews and provides an authenticated user with a form to submit a new review (rating 1-5 and comment). Non-authenticated users see a message prompting them to sign in to write a review.",
+    "source": "pages/product.md",
+    "category": "core",
+    "title": "Product Detail Screen",
+    "section": "What Users See",
+    "chunk_index": 0
+  },
+  {
+    "text": "## State (Redux)\n- `productDetails` slice: `loading`, `error`, `product` object\n- `userLogin` slice: `userInfo` (user credentials, if logged in)\n- `productReviewCreate` slice: `loading`, `success`, `error` for review submission",
+    "source": "pages/product.md",
+    "category": "core",
+    "title": "Product Detail Screen",
+    "section": "State (Redux)",
+    "chunk_index": 1
+  },
+  {
+    "text": "## API Calls\n- **On mount/product ID change**: `GET /api/products/:id` via `listProductDetails()` action\n- **On review submit**: `POST /api/products/:id/reviews` with `{ rating, comment }` via `createProductReview()` action",
+    "source": "pages/product.md",
+    "category": "core",
+    "title": "Product Detail Screen",
+    "section": "API Calls",
+    "chunk_index": 2
+  },
+  {
+    "text": "## Components\n- **Rating** – displays star rating and review count\n- **Message** – error or success notifications\n- **Loader** – loading spinner during data fetch\n- **Meta** – sets document title to product name for SEO\n- **Form** (Bootstrap) – review submission form with rating dropdown and comment textarea",
+    "source": "pages/product.md",
+    "category": "core",
+    "title": "Product Detail Screen",
+    "section": "Components",
+    "chunk_index": 3
+  },
+  {
+    "text": "## User Actions\n- **Select quantity**: Dropdown to choose quantity (1 to countInStock)\n- **Click \"Add To Cart\"**: Navigates to `/cart/:id?qty=[quantity]`\n- **Submit review** (if logged in): Dispatches review creation action; form clears on success\n- **Click \"Go Back\"**: Returns to previous page or home\n- **Click product image**: No action (image is static)",
+    "source": "pages/product.md",
+    "category": "core",
+    "title": "Product Detail Screen",
+    "section": "User Actions",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Edge Cases\n- Out of stock: \"Add To Cart\" button is disabled, status shows \"Out Of Stock\"\n- No reviews: Shows \"No Reviews\" message\n- Loading review submission: Button is disabled, loader appears\n- Review submission error: Error message displayed below form\n- User not logged in: Review form replaced with sign-in link\n- Quantity dropdown: Only shows options up to countInStock value",
+    "source": "pages/product.md",
+    "category": "core",
+    "title": "Product Detail Screen",
+    "section": "Edge Cases",
+    "chunk_index": 5
+  }
+]

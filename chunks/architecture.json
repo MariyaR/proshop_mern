@@ -1,0 +1,282 @@
+[
+  {
+    "text": "# ProShop MERN — Architecture Overview\n\n> **Deprecation notice.** The upstream project (`bradtraversy/proshop_mern`) is\n> explicitly marked as deprecated in favour of `proshop-v2`. This document\n> describes the v1 codebase as-is, including its known technical debt, because\n> understanding legacy code is part of the exercise.\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## 1. System Overview\n\nProShop is a full-stack e-commerce web application built with the MERN stack\n(MongoDB, Express, React, Node). It ships a working storefront where customers\nbrowse a product catalogue, build a cart, authenticate, complete a multi-step\ncheckout, and pay via PayPal. Administrators get a separate management surface\nfor products, users, and orders.\n\n**Business scope:**\n\n- Product catalogue with pagination, keyword search, and top-rated carousel.\n- Per-product star rating and comment system (one review per authenticated user).\n- Cart with quantity control, persisted across page reloads via `localStorage`.\n- Multi-step checkout: cart → shipping → payment method → order summary → pay.\n- PayPal Sandbox payment capture with order status lifecycle (`isPaid`,\n  `isDelivered`).\n- Admin panel: user CRUD, product CRUD with image upload, order delivery\n  management.\n\n**Actors:**\n\n| Actor | Entry points |\n|---|---|\n| Guest | `/`, `/product/:id` — read-only catalogue |\n| Customer (authenticated) | Cart, checkout, order history (`/profile`), reviews |\n| Admin | `/admin/userlist`, `/admin/productlist`, `/admin/orderlist`, individual edit screens |\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "1. System Overview",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Backend\n\n| Technology | Version | Role |\n|---|---|---|\n| Node.js | 22 (runtime; `\"type\": \"module\"` — full ESM) | Runtime |\n| Express | ^4.17.1 | HTTP server, routing |\n| Mongoose | ^5.10.6 | ODM for MongoDB |\n| MongoDB | 7 (Docker image `mongo:7`) | Primary data store |\n| jsonwebtoken | ^8.5.1 | JWT signing and verification |\n| bcryptjs | ^2.4.3 | Password hashing |\n| multer | ^1.4.2 | Multipart file upload handling |\n| morgan | ^1.10.0 | HTTP request logger (dev only) |\n| dotenv | ^8.2.0 | Env variable loading |\n| express-async-handler | ^1.1.4 | Async error propagation without try/catch in every handler |\n| colors | ^1.4.0 | Colored console output |\n| nodemon | ^2.0.4 (dev) | Auto-restart on file change |\n| concurrently | ^5.3.0 (dev) | Run server + client in one terminal |",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "Backend",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Frontend\n\n| Technology | Version | Role |\n|---|---|---|\n| React | ^16.13.1 | UI library |\n| React DOM | ^16.13.1 | DOM rendering |\n| React Router DOM | ^5.2.0 | Client-side routing |\n| Redux | ^4.0.5 | Global state management |\n| React Redux | ^7.2.1 | React bindings for Redux |\n| Redux Thunk | ^2.3.0 | Async action middleware |\n| redux-devtools-extension | ^2.13.8 | Redux DevTools integration |\n| axios | ^0.20.0 | HTTP client for API calls |\n| React Bootstrap | ^1.3.0 | Bootstrap 4 component library |\n| react-paypal-button-v2 | ^2.6.2 | PayPal SDK integration component |\n| react-helmet | ^6.1.0 | `<head>` meta tag management |\n| react-scripts | 3.4.3 | CRA build toolchain |\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "Frontend",
+    "chunk_index": 3
+  },
+  {
+    "text": "## 3. System Layers\n\n```\n┌─────────────────────────────────────────────────────────┐\n│  Browser                                                │\n│  React 16 SPA (CRA)                                     │\n│  Redux Store  ←→  Screens  ←→  Components              │\n│  axios (proxy → :5001)                                  │\n└────────────────────────┬────────────────────────────────┘\n                         │ HTTP /api/*\n┌────────────────────────▼────────────────────────────────┐\n│  Node 22 / Express 4                                    │\n│  morgan → json parser → routes → middleware → handlers  │\n│  Static: /uploads  (dev + prod)                         │\n│  Static: /frontend/build  (prod only)                   │\n└────────────────────────┬────────────────────────────────┘\n                         │ mongoose\n┌────────────────────────▼────────────────────────────────┐\n│  MongoDB 7  (Docker volume mongo_data)                  │\n│  Collections: users, products, orders                   │\n└─────────────────────────────────────────────────────────┘\n\nExternal integrations\n  PayPal Sandbox  ←  react-paypal-button-v2 (frontend)\n                  →  PUT /api/orders/:id/pay  (backend confirms)\n```\n\n**Development proxy:** `frontend/package.json` sets `\"proxy\": \"http://127.0.0.1:5001\"`,\nso `axios.get('/api/...')` in dev goes to the Express server without CORS\nissues. In production the frontend is built and served statically by Express\nitself.\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "3. System Layers",
+    "chunk_index": 4
+  },
+  {
+    "text": "### 4.1 Entry Point and Store Bootstrapping\n\n`frontend/src/index.js` wraps `<App>` in a Redux `<Provider>`. The store\n(`store.js`) is constructed with `createStore(reducer, initialState,\ncomposeWithDevTools(applyMiddleware(thunk)))`.\n\nState hydration from `localStorage` happens at store creation time — not in a\nmiddleware, not lazily:\n\n```js\nconst cartItemsFromStorage = localStorage.getItem('cartItems')\n  ? JSON.parse(localStorage.getItem('cartItems'))\n  : []\n\nconst userInfoFromStorage = localStorage.getItem('userInfo')\n  ? JSON.parse(localStorage.getItem('userInfo'))\n  : null\n\nconst initialState = {\n  cart: { cartItems: cartItemsFromStorage, shippingAddress: shippingAddressFromStorage },\n  userLogin: { userInfo: userInfoFromStorage },\n}\n```",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "4.1 Entry Point and Store Bootstrapping",
+    "chunk_index": 5
+  },
+  {
+    "text": "### 4.2 Redux Store Structure\n\n`combineReducers` merges 20 slices into a flat state tree:\n\n| State key | Reducer | What it holds |\n|---|---|---|\n| `productList` | `productListReducer` | `{ loading, products[], pages, page, error }` |\n| `productDetails` | `productDetailsReducer` | `{ loading, product, error }` |\n| `productDelete` | `productDeleteReducer` | `{ loading, success, error }` |\n| `productCreate` | `productCreateReducer` | `{ loading, success, product, error }` |\n| `productUpdate` | `productUpdateReducer` | `{ loading, success, product, error }` |\n| `productReviewCreate` | `productReviewCreateReducer` | `{ loading, success, error }` |\n| `productTopRated` | `productTopRatedReducer` | `{ loading, products[], error }` |\n| `cart` | `cartReducer` | `{ cartItems[], shippingAddress, paymentMethod }` |\n| `userLogin` | `userLoginReducer` | `{ loading, userInfo, error }` |\n| `userRegister` | `userRegisterReducer` | `{ loading, userInfo, error }` |\n| `userDetails` | `userDetailsReducer` | `{ loading, user, error }` |\n| `userUpdateProfile` | `userUpdateProfileReducer` | `{ loading, success, userInfo, error }` |\n| `userList` | `userListReducer` | `{ loading, users[], error }` |\n| `userDelete` | `userDeleteReducer` | `{ loading, success, error }` |\n| `userUpdate` | `userUpdateReducer` | `{ loading, success, error }` |\n| `orderCreate` | `orderCreateReducer` | `{ loading, success, order, error }` |\n| `orderDetails` | `orderDetailsReducer` | `{ loading, order, error }` |\n| `orderPay` | `orderPayReducer` | `{ loading, success, error }` |\n| `orderDeliver` | `orderDeliverReducer` | `{ loading, success, error }` |\n| `orderListMy` | `orderListMyReducer` | `{ loading, orders[], error }` |\n| `orderList` | `orderListReducer` | `{ loading, orders[], error }` |\n\nEach slice follows the same three-state pattern: `loading: true` on REQUEST,\npopulated data on SUCCESS, `error` on FAIL. RESET actions clear the slice back\nto its initial value to prevent stale state between navigations.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "4.2 Redux Store Structure",
+    "chunk_index": 6
+  },
+  {
+    "text": "### 4.3 Action Creators\n\nActions are organised in four files under `frontend/src/actions/`:\n\n- **`productActions.js`** — `listProducts`, `listProductDetails`,\n  `deleteProduct`, `createProduct`, `updateProduct`, `createProductReview`,\n  `listTopProducts`.\n- **`cartActions.js`** — `addToCart`, `removeFromCart`,\n  `saveShippingAddress`, `savePaymentMethod`. Cart actions write to\n  `localStorage` directly after dispatching.\n- **`userActions.js`** — `login`, `logout`, `register`, `getUserDetails`,\n  `updateUserProfile`, `listUsers`, `deleteUser`, `updateUser`. The `logout`\n  action clears all localStorage keys and forces a redirect to `/login` via\n  `document.location.href`.\n- **`orderActions.js`** — `createOrder`, `getOrderDetails`, `payOrder`,\n  `deliverOrder`, `listMyOrders`, `listOrders`.\n\nAll async actions are thunks. The pattern is uniform: dispatch REQUEST → call\naxios → dispatch SUCCESS or FAIL. Authenticated actions extract the JWT token\nfrom `state.userLogin.userInfo.token` via `getState()`. When the server returns\n`\"Not authorized, token failed\"`, the action dispatches `logout()` to force a\nclean session wipe.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "4.3 Action Creators",
+    "chunk_index": 7
+  },
+  {
+    "text": "### 4.4 Screens vs Components\n\n**`frontend/src/screens/`** — 14 page-level components, one per route. Screens\nown Redux interaction: `useSelector` to read state, `useDispatch` to trigger\nactions, `useEffect` to trigger fetches on mount.\n\n| Screen | Route | Access |\n|---|---|---|\n| `HomeScreen` | `/`, `/search/:keyword`, `/page/:pageNumber` | Public |\n| `ProductScreen` | `/product/:id` | Public |\n| `CartScreen` | `/cart/:id?` | Public (read); add requires auth |\n| `LoginScreen` | `/login` | Guest only |\n| `RegisterScreen` | `/register` | Guest only |\n| `ProfileScreen` | `/profile` | Auth |\n| `ShippingScreen` | `/shipping` | Auth |\n| `PaymentScreen` | `/payment` | Auth |\n| `PlaceOrderScreen` | `/placeorder` | Auth |\n| `OrderScreen` | `/order/:id` | Auth |\n| `UserListScreen` | `/admin/userlist` | Admin |\n| `UserEditScreen` | `/admin/user/:id/edit` | Admin |\n| `ProductListScreen` | `/admin/productlist`, `/admin/productlist/:pageNumber` | Admin |\n| `ProductEditScreen` | `/admin/product/:id/edit` | Admin |\n| `OrderListScreen` | `/admin/orderlist` | Admin |\n\n**`frontend/src/components/`** — 12 reusable UI components that receive props,\nhave no direct Redux coupling (except `Header` and `ProductCarousel` which\nuse `useSelector`):\n\n`Header`, `Footer`, `Product`, `ProductCarousel`, `Rating`, `Loader`,\n`Message`, `CheckoutSteps`, `Paginate`, `SearchBox`, `FormContainer`, `Meta`.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "4.4 Screens vs Components",
+    "chunk_index": 8
+  },
+  {
+    "text": "### 4.5 Routing\n\nReact Router v5 is used with `<BrowserRouter>` and flat `<Route>` components\n(no `<Switch>`). This means multiple routes can match simultaneously — an\nintentional CRA v1 pattern that works because routes are distinct enough not\nto collide in practice. Admin guard is implemented at the screen level (each\nadmin screen checks `userInfo.isAdmin` and redirects if not met), not at the\nrouter level.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "4.5 Routing",
+    "chunk_index": 9
+  },
+  {
+    "text": "### 4.6 State Lifecycle for Checkout\n\n```\nCartScreen → dispatch addToCart → cartReducer → localStorage\nShippingScreen → dispatch saveShippingAddress → cartReducer → localStorage\nPaymentScreen → dispatch savePaymentMethod → cartReducer → localStorage\nPlaceOrderScreen → dispatch createOrder → POST /api/orders\n    → ORDER_CREATE_SUCCESS → dispatch CART_CLEAR_ITEMS + remove 'cartItems'\n    → history.push(/order/:id)\nOrderScreen → loads PayPal SDK via GET /api/config/paypal\n    → user approves → react-paypal-button-v2 callback\n    → dispatch payOrder → PUT /api/orders/:id/pay\n```\n\nPrice calculation (items, shipping, tax, total) happens client-side in\n`PlaceOrderScreen` and `OrderScreen`. Shipping is free above $100; tax is fixed\nat 15%.\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "4.6 State Lifecycle for Checkout",
+    "chunk_index": 10
+  },
+  {
+    "text": "### 5.1 Express Middleware Chain\n\n`backend/server.js` assembles middleware in this order:\n\n```\nmorgan('dev')          // dev only; logs METHOD URL status ms\nexpress.json()         // parses application/json body\n/api/products → productRoutes\n/api/users    → userRoutes\n/api/orders   → orderRoutes\n/api/upload   → uploadRoutes\nGET /api/config/paypal → inline handler (returns PAYPAL_CLIENT_ID)\n/uploads      → express.static (serves uploaded images)\nproduction:   → express.static(frontend/build) + wildcard SPA fallback\nnotFound      // 404 for unmatched routes\nerrorHandler  // unified error response\n```",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "5.1 Express Middleware Chain",
+    "chunk_index": 11
+  },
+  {
+    "text": "### 5.2 REST Routes\n\n**Products** — `GET /api/products`\n\n| Method | Path | Auth | Controller |\n|---|---|---|---|\n| GET | `/api/products` | Public | `getProducts` — paginated, keyword search |\n| GET | `/api/products/top` | Public | `getTopProducts` — top 3 by rating |\n| GET | `/api/products/:id` | Public | `getProductById` |\n| POST | `/api/products` | Admin | `createProduct` — creates placeholder |\n| PUT | `/api/products/:id` | Admin | `updateProduct` |\n| DELETE | `/api/products/:id` | Admin | `deleteProduct` |\n| POST | `/api/products/:id/reviews` | Auth | `createProductReview` |\n\n**Users** — `GET /api/users`\n\n| Method | Path | Auth | Controller |\n|---|---|---|---|\n| POST | `/api/users` | Public | `registerUser` |\n| POST | `/api/users/login` | Public | `authUser` — returns JWT |\n| GET | `/api/users/profile` | Auth | `getUserProfile` |\n| PUT | `/api/users/profile` | Auth | `updateUserProfile` — returns new JWT |\n| GET | `/api/users` | Admin | `getUsers` |\n| GET | `/api/users/:id` | Admin | `getUserById` |\n| PUT | `/api/users/:id` | Admin | `updateUser` |\n| DELETE | `/api/users/:id` | Admin | `deleteUser` |\n\n**Orders** — `GET /api/orders`\n\n| Method | Path | Auth | Controller |\n|---|---|---|---|\n| POST | `/api/orders` | Auth | `addOrderItems` |\n| GET | `/api/orders/myorders` | Auth | `getMyOrders` |\n| GET | `/api/orders/:id` | Auth | `getOrderById` — populates user name/email |\n| PUT | `/api/orders/:id/pay` | Auth | `updateOrderToPaid` |\n| PUT | `/api/orders/:id/deliver` | Admin | `updateOrderToDelivered` |\n| GET | `/api/orders` | Admin | `getOrders` |\n\n**Upload** — `POST /api/upload` (Admin) — returns file path string.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "5.2 REST Routes",
+    "chunk_index": 12
+  },
+  {
+    "text": "### 5.3 Controllers\n\nControllers use `express-async-handler` to wrap every handler, so thrown errors\npropagate to Express's error middleware without explicit try/catch in each\nfunction. The pattern is consistent:\n\n```js\nconst getProductById = asyncHandler(async (req, res) => {\n  const product = await Product.findById(req.params.id)\n  if (product) {\n    res.json(product)\n  } else {\n    res.status(404)\n    throw new Error('Product not found')\n  }\n})\n```\n\nPagination in `getProducts`: page size hardcoded at 10, MongoDB `.limit()` and\n`.skip()` applied. Keyword search uses a case-insensitive `$regex` on the\n`name` field — not a full-text index.\n\n`createProduct` creates a placeholder document with sample data; the admin is\nexpected to immediately edit it on the product edit screen.\n\n`createProductReview` prevents duplicate reviews by checking\n`product.reviews.find(r => r.user.toString() === req.user._id.toString())`.\nRating is recalculated as a simple arithmetic mean on every new review.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "5.3 Controllers",
+    "chunk_index": 13
+  },
+  {
+    "text": "### 5.4 Mongoose Models\n\nSee Section 6 for full schema detail.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "5.4 Mongoose Models",
+    "chunk_index": 14
+  },
+  {
+    "text": "### 5.5 JWT Auth Flow\n\n1. Client POSTs credentials to `/api/users/login`.\n2. Controller calls `user.matchPassword(password)` — a Mongoose instance method\n   using `bcrypt.compare`.\n3. On success, `generateToken(user._id)` signs a JWT with `process.env.JWT_SECRET`\n   (expiry configured in `generateToken.js`; defaults to 30 days in the\n   upstream implementation).\n4. The JWT is returned in the response body and stored in `localStorage` by the\n   frontend.\n5. Subsequent requests include `Authorization: Bearer <token>`.\n6. The `protect` middleware in `authMiddleware.js` verifies the token, loads\n   the full user from MongoDB (excluding password), and attaches it to\n   `req.user`.\n7. The `admin` middleware checks `req.user.isAdmin`; returns 401 if false.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "5.5 JWT Auth Flow",
+    "chunk_index": 15
+  },
+  {
+    "text": "### 5.6 File Uploads\n\n`multer` is configured in `uploadRoutes.js` with disk storage writing to the\n`uploads/` directory at the project root. Constraints:\n\n- Allowed extensions: `.jpg`, `.jpeg`, `.png`\n- MIME type check: `image/jpeg`, `image/png`\n- Max file size: 2 MB (`2 * 1024 * 1024` bytes)\n- Filename pattern: `image-{timestamp}.{ext}` (field name + Date.now)\n\nThe route is admin-only (`protect, admin`). On success the handler returns a\nplain string path (e.g. `/uploads/image-1712345678900.jpg`) which the client\nstores in the `image` field of the product form.\n\nThe `uploads/` directory is served as static files by Express:\n\n```js\napp.use('/uploads', express.static(path.join(__dirname, '/uploads')))\n```\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "5.6 File Uploads",
+    "chunk_index": 16
+  },
+  {
+    "text": "### 6.1 Collection: `users`\n\n```\nUser {\n  _id:       ObjectId (auto)\n  name:      String   required\n  email:     String   required, unique\n  password:  String   required  // bcrypt hash, salt rounds = 10\n  isAdmin:   Boolean  required, default: false\n  createdAt: Date     (timestamps)\n  updatedAt: Date     (timestamps)\n}\n```\n\n- **Instance method** `matchPassword(enteredPassword)` — `bcrypt.compare`.\n- **Pre-save hook** — hashes password only when `isModified('password')`.\n  This prevents re-hashing on `updateUserProfile` calls that change only name\n  or email.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "6.1 Collection: `users`",
+    "chunk_index": 17
+  },
+  {
+    "text": "### 6.2 Collection: `products`\n\n```\nProduct {\n  _id:          ObjectId (auto)\n  user:         ObjectId → User  // admin who created/owns the product\n  name:         String   required\n  image:        String   required  // path to image file or URL\n  brand:        String   required\n  category:     String   required\n  description:  String   required\n  reviews:      [Review]           // embedded array\n  rating:       Number   required, default: 0\n  numReviews:   Number   required, default: 0\n  price:        Number   required, default: 0\n  countInStock: Number   required, default: 0\n  createdAt:    Date     (timestamps)\n  updatedAt:    Date     (timestamps)\n}\n\nReview {                           // embedded sub-document\n  _id:       ObjectId (auto)\n  name:      String  required      // denormalised from user at review time\n  rating:    Number  required\n  comment:   String  required\n  user:      ObjectId → User\n  createdAt: Date    (timestamps)\n  updatedAt: Date    (timestamps)\n}\n```\n\nReviews are **embedded** in the product document, not a separate collection.\nThis means loading a single product always returns all its reviews. `rating` and\n`numReviews` are **denormalised** aggregate fields, updated synchronously in the\ncontroller every time a review is added.\n\nKeyword search: `{ name: { $regex: keyword, $options: 'i' } }` — scans all\ndocuments, no text index. Adequate for a demo dataset; would not scale.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "6.2 Collection: `products`",
+    "chunk_index": 18
+  },
+  {
+    "text": "### 6.3 Collection: `orders`\n\n```\nOrder {\n  _id:             ObjectId (auto)\n  user:            ObjectId → User\n  orderItems:      [OrderItem]\n  shippingAddress: {\n    address:    String required\n    city:       String required\n    postalCode: String required\n    country:    String required\n  }\n  paymentMethod:   String  required\n  paymentResult:   {        // populated after PayPal confirmation\n    id:            String\n    status:        String\n    update_time:   String\n    email_address: String\n  }\n  itemsPrice:      Number  required, default: 0\n  taxPrice:        Number  required, default: 0\n  shippingPrice:   Number  required, default: 0\n  totalPrice:      Number  required, default: 0\n  isPaid:          Boolean required, default: false\n  paidAt:          Date\n  isDelivered:     Boolean required, default: false\n  deliveredAt:     Date\n  createdAt:       Date    (timestamps)\n  updatedAt:       Date    (timestamps)\n}\n\nOrderItem {               // embedded sub-document\n  name:    String  required\n  qty:     Number  required\n  image:   String  required\n  price:   Number  required\n  product: ObjectId → Product\n}\n```\n\n`OrderItem` is embedded in the order document. Product fields (`name`, `image`,\n`price`) are **denormalised at order creation time** — they capture the state of\nthe product at purchase, insulating the order from future product edits.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "6.3 Collection: `orders`",
+    "chunk_index": 19
+  },
+  {
+    "text": "### 6.4 Cross-Collection Relationships\n\n```\nUser  ──< Order            (User.id in Order.user)\nOrder ──< OrderItem        (embedded)\nOrderItem >── Product      (Product.id in OrderItem.product)\nProduct ──< Review         (embedded)\nReview >── User            (User.id in Review.user)\nProduct >── User           (User.id in Product.user — creator)\n```\n\n`Order.findById().populate('user', 'name email')` is the only explicit\n`populate()` call in the codebase, used by `getOrderById` and `getOrders`.\nOther relationships are resolved client-side or not at all.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "6.4 Cross-Collection Relationships",
+    "chunk_index": 20
+  },
+  {
+    "text": "### 6.5 Indexes\n\nMongoose 5 with `useCreateIndex: true` creates unique indexes declared in the\nschema. The only explicit unique index is `email` on the `users` collection.\nNo compound indexes, no text indexes. `_id` indexes are implicit on all\ncollections.\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "6.5 Indexes",
+    "chunk_index": 21
+  },
+  {
+    "text": "### 7.1 PayPal Sandbox\n\nThe integration uses `react-paypal-button-v2` (wraps the PayPal JavaScript SDK\nv2). Flow:\n\n1. `OrderScreen` calls `GET /api/config/paypal` to fetch `PAYPAL_CLIENT_ID`\n   from the server (avoids embedding the key in the frontend bundle).\n2. A `<script>` tag pointing to `https://www.paypal.com/sdk/js?client-id=...`\n   is injected dynamically.\n3. Once the SDK is ready (`sdkReady` state), `<PayPalButton>` renders.\n4. On approval, PayPal calls the `onSuccess` callback with a payment result\n   object (id, status, update_time, payer.email_address).\n5. The frontend dispatches `payOrder(orderId, paymentResult)` which calls\n   `PUT /api/orders/:id/pay` with the result in the body.\n6. The controller sets `isPaid = true`, `paidAt = Date.now()`, and saves\n   `paymentResult` in the order document. No server-side PayPal verification\n   is performed — the backend trusts the client-provided result object.\n\n**Security note:** No server-side verification of the PayPal payment is\nimplemented. A malicious client could call `PUT /api/orders/:id/pay` with\nfabricated data. In a production system this route must verify the transaction\nwith PayPal's Orders API before marking the order paid.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "7.1 PayPal Sandbox",
+    "chunk_index": 22
+  },
+  {
+    "text": "### 7.2 Image Uploads\n\nHandled entirely on-premise: `multer` saves to the local filesystem (`uploads/`),\nExpress serves the files statically. No CDN, no cloud storage. On Heroku (the\noriginal target) the ephemeral filesystem would lose all uploads on dyno\nrestart — one of the reasons the upstream deprecated this project.\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "7.2 Image Uploads",
+    "chunk_index": 23
+  },
+  {
+    "text": "### 8.1 Local Development\n\n```bash\n# Start MongoDB in Docker\nnpm run mongo:up        # docker compose up -d mongo\n\n# Seed the database\nnpm run data:import     # node backend/seeder\nnpm run data:import-extra  # node backend/seedExtra (extended fixtures)\n\n# Run both servers\nnpm run dev             # concurrently: nodemon server + CRA dev server\n```\n\nThe frontend dev server runs on port 3000 (CRA default). The backend runs on\nport 5000 by default (overridden by `PORT` env var). The CRA proxy setting\nroutes `/api/*` to `:5001` — note the backend and proxy target differ if\n`PORT` is not set, which can cause confusion; the actual backend port must\nmatch the proxy target in `frontend/package.json`.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "8.1 Local Development",
+    "chunk_index": 24
+  },
+  {
+    "text": "### 8.2 Docker Compose\n\n`docker-compose.yml` defines a single `mongo` service:\n\n```yaml\nservices:\n  mongo:\n    image: mongo:7\n    container_name: proshop-mongo\n    ports:\n      - \"27017:27017\"\n    volumes:\n      - mongo_data:/data/db\n```\n\nNo application container is defined — Node runs on the host directly.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "8.2 Docker Compose",
+    "chunk_index": 25
+  },
+  {
+    "text": "### 8.3 Procfile and Production Build\n\n```\nweb: node backend/server.js\n```\n\n`heroku-postbuild` in `package.json`:\n\n```bash\nNPM_CONFIG_PRODUCTION=false npm install --prefix frontend \\\n  && NODE_OPTIONS=--openssl-legacy-provider npm run build --prefix frontend\n```\n\nThis installs frontend deps and produces `frontend/build/`. In production\n(`NODE_ENV=production`) Express serves this directory as a static SPA and\ncatches all `*` routes to return `index.html`.\n\nThe `NODE_OPTIONS=--openssl-legacy-provider` flag is required because\n`react-scripts 3.4.3` uses webpack 4 which calls a deprecated OpenSSL API\nremoved in Node 17+.\n\n**Current status:** Heroku Free tier was discontinued in 2022. This project is\nnot deployed anywhere. The Procfile is retained as a reference (ADR-0003).",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "8.3 Procfile and Production Build",
+    "chunk_index": 26
+  },
+  {
+    "text": "### 8.4 Environment Variables\n\nRequired variables in a `.env` file at the project root:\n\n| Variable | Purpose |\n|---|---|\n| `NODE_ENV` | `development` / `production` |\n| `PORT` | Backend listen port (default 5000) |\n| `MONGO_URI` | MongoDB connection string |\n| `JWT_SECRET` | Secret for signing JWTs |\n| `PAYPAL_CLIENT_ID` | PayPal Sandbox client ID |\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "8.4 Environment Variables",
+    "chunk_index": 27
+  },
+  {
+    "text": "### 9.1 Authentication and Authorisation\n\nTwo middleware functions in `backend/middleware/authMiddleware.js`:\n\n- `protect` — extracts and verifies the Bearer JWT, loads the user from the\n  database (minus password), attaches to `req.user`, calls `next()`. Returns\n  401 on missing or invalid token.\n- `admin` — checks `req.user.isAdmin`; returns 401 if false.\n\nRoutes compose them: `router.route('/').get(protect, admin, getOrders)`.\nThere is no role system beyond the binary `isAdmin` flag.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "9.1 Authentication and Authorisation",
+    "chunk_index": 28
+  },
+  {
+    "text": "### 9.2 Error Handling\n\nTwo middleware functions in `backend/middleware/errorMiddleware.js`:\n\n- `notFound` — creates a 404 error for any request that fell through all routes.\n- `errorHandler` — terminal error handler. Returns JSON `{ message, stack }`;\n  stack is suppressed in production.\n\n```js\nconst errorHandler = (err, req, res, next) => {\n  const statusCode = res.statusCode === 200 ? 500 : res.statusCode\n  res.status(statusCode)\n  res.json({\n    message: err.message,\n    stack: process.env.NODE_ENV === 'production' ? null : err.stack,\n  })\n}\n```\n\nControllers signal errors by setting `res.status(4xx)` and then `throw new\nError(message)`. `express-async-handler` catches the thrown error and passes it\nto `errorHandler`. This avoids try/catch boilerplate in every controller.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "9.2 Error Handling",
+    "chunk_index": 29
+  },
+  {
+    "text": "### 9.3 Logging\n\n`morgan('dev')` logs `METHOD URL STATUS RESPONSE_TIME` to stdout, enabled only\nin development. No structured logging, no log aggregation. Production has no\naccess logs.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "9.3 Logging",
+    "chunk_index": 30
+  },
+  {
+    "text": "### 9.4 CORS\n\nNo explicit CORS headers are set. In development the CRA proxy eliminates CORS\nbecause the browser speaks to `:3000` which forwards to `:5001` server-side.\nIn production the frontend is served from the same origin as the API. Any\nnon-browser client (e.g., Postman, mobile app) would need to call the backend\ndirectly and no CORS headers would be returned.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "9.4 CORS",
+    "chunk_index": 31
+  },
+  {
+    "text": "### 9.5 Input Validation\n\nNo dedicated validation library (no Joi, no express-validator). Validation is\nimplicit: Mongoose schema `required` constraints catch missing fields at the ODM\nlevel and throw a `CastError` or `ValidationError` that propagates through\n`express-async-handler` to `errorHandler`. No length limits or type coercion\nguards exist beyond Mongoose's basic type casting.\n\n---",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "9.5 Input Validation",
+    "chunk_index": 32
+  },
+  {
+    "text": "### What Works Well\n\n- **Uniform async pattern.** Every controller uses `asyncHandler` + throw.\n  Consistent, readable, easy to extend.\n- **Redux slice granularity.** One reducer per operation (create, update,\n  delete, list) instead of one per entity. Prevents reducer bloat and makes\n  optimistic UI state management straightforward.\n- **Embedded reviews.** Eliminates a join for the most common read (product\n  detail page includes reviews). Appropriate for a dataset where review counts\n  per product are small.\n- **localStorage hydration at boot.** Cart and auth state survive page reloads\n  without a server round-trip. Simple and reliable for a demo application.\n- **Price denormalisation in OrderItem.** Captures price at order time, which\n  is the correct e-commerce behaviour.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "What Works Well",
+    "chunk_index": 33
+  },
+  {
+    "text": "### Known Technical Debt\n\n**JWT in localStorage (ADR-0001).**\nThe token is readable by any JavaScript on the page. An XSS vulnerability would\nallow token theft. The `proshop-v2` upstream moves to `httpOnly` cookies with\nCSRF protection. This is the most significant security gap for any real\ndeployment.\n\n**Mongoose 5 (ADR-0002).**\nFour major versions behind current (8.x). Uses deprecated driver options\n(`useUnifiedTopology`, `useNewUrlParser`, `useCreateIndex`) and the removed\n`Model.remove()` API. No test suite exists to cover an upgrade.\n\n**No server-side PayPal verification.**\n`PUT /api/orders/:id/pay` trusts the client-submitted payment result without\nverifying the transaction with PayPal's API. Any authenticated user can mark\nany of their own orders as paid.\n\n**Regex search, no text index.**\n`getProducts` uses `$regex` with a case-insensitive option, which performs a\ncollection scan. For more than a few hundred products, a MongoDB text index\nwith `$text` would be required.\n\n**Hardcoded business rules.**\nTax rate (15%), free shipping threshold ($100), and page size (10) are\nhardcoded in-source. No configuration layer.\n\n**No test coverage.**\nZero unit or integration tests. No test runner configured on the backend.\n\n**Local file storage for uploads.**\n`multer` writes to `uploads/` on the local filesystem. Incompatible with any\nhorizontally scaled or ephemeral deployment environment. A production system\nwould need S3-compatible object storage.\n\n**React 16 / CRA 3 / React Router v5.**\nAll are either end-of-life or superseded by major versions (React 18, Vite,\nReact Router v6/v7). The `NODE_OPTIONS=--openssl-legacy-provider` workaround\nis a symptom of the age of the toolchain.\n\n**Deprecated project status.**\nThe upstream bradtraversy/proshop_mern repository itself is deprecated in\nfavour of `proshop-v2`, which addresses several of the above issues (httpOnly\ncookies, Mongoose 8, React 18, Redux Toolkit). This codebase is suitable for\nlearning exercises and architecture analysis, not for production use.",
+    "source": "architecture.md",
+    "category": "core",
+    "title": "Run both servers",
+    "section": "Known Technical Debt",
+    "chunk_index": 34
+  }
+]

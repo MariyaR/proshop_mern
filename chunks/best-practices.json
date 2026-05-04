@@ -1,0 +1,570 @@
+[
+  {
+    "text": "# MERN E-commerce Best Practices 2026\n\n> Practical engineering guidance for building production-grade e-commerce systems on the MERN stack.\n> Written for the `proshop_mern` study project — a deliberately \"dirty\" 2020-era codebase used as a\n> RAG demonstration vehicle. The goal here is not to rewrite the project, but to document what\n> production teams do differently in 2026.\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "## 1. Introduction: Why proshop_mern Is Deprecated\n\nThe original `proshop_mern` fork (bradtraversy/proshop_mern) was built circa 2020–2022 with:\n\n- **React 17** — predates concurrent rendering and Server Components\n- **Create React App** — unmaintained since 2023, superseded by Vite\n- **Classic Redux** — hand-written action creators, action types, and reducers\n- **localStorage for JWT** — known XSS vector\n- **No TypeScript** — runtime errors catch what the compiler should\n- **Bootstrap 4** — not tree-shakeable, global CSS collisions\n- **Single flat Node process** — no clustering, no health checks, no graceful shutdown\n\nNone of these choices were wrong for their time. The codebase is marked `DEPRECATED` precisely because it makes an honest reference point: you can see _every shortcut_ that a real 2026 production build would address.\n\nIn 2026, the MERN stack itself is alive and well — it just looks different. The dominant shift is:\n\n| 2020 era | 2026 production |\n|---|---|\n| Create React App | Vite or Next.js 15 |\n| React 17 class/hook mix | React 19, Server Components where SSR helps |\n| Classic Redux + thunks | RTK Query (if Redux in use) or TanStack Query |\n| `localStorage` JWT | `httpOnly` cookie, refresh token rotation |\n| Mongoose with no indexes | Compound indexes, lean(), projections |\n| PayPal JS SDK direct | Webhook-driven, idempotency keys |\n| No feature flags | OpenFeature / LaunchDarkly / Unleash |\n| Ad-hoc admin CRUD | RBAC + audit log |\n\nSources:\n- [How to Build a Production-Ready MERN Stack App in 2026](https://medium.com/@lomcos/how-to-build-a-production-ready-mern-stack-app-in-2026-cc5dc9d8bd81)\n- [The Production MERN Stack Guide for 2026](https://dev.to/krunal_groovy/the-production-mern-stack-guide-for-2026-not-another-todo-app-4n31)\n- [Architectural Best Practices for MERN E-commerce](https://www.technetexperts.com/mern-nextjs-ecommerce-architecture/)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "1. Introduction: Why proshop_mern Is Deprecated",
+    "chunk_index": 1
+  },
+  {
+    "text": "### 2.1 TypeScript end-to-end\n\nModern MERN projects use TypeScript across the full stack with shared interfaces in a `packages/shared/` monorepo package. The compiler catches shape mismatches between Mongoose documents, API responses, and React props at build time rather than in production.\n\n```\nproject/\n├── apps/\n│   ├── web/          # React / Next.js frontend\n│   └── api/          # Express / Fastify backend\n├── packages/\n│   ├── shared/       # Shared TypeScript interfaces\n│   └── db/           # Mongoose models + migrations\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.1 TypeScript end-to-end",
+    "chunk_index": 2
+  },
+  {
+    "text": "### 2.2 Vite replaces Create React App\n\nCRA is unmaintained. Vite provides faster HMR, ES module-native dev server, and significantly smaller production bundles. For e-commerce with SEO requirements, Next.js 15 with the App Router (Server Components + ISR) is the standard choice.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.2 Vite replaces Create React App",
+    "chunk_index": 3
+  },
+  {
+    "text": "### 2.3 Fastify as Express alternative\n\nFor API throughput-sensitive services, Fastify provides roughly 2x requests/second versus Express with a near-identical developer surface area. Schema validation is built-in via JSON Schema rather than bolted on.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.3 Fastify as Express alternative",
+    "chunk_index": 4
+  },
+  {
+    "text": "### 2.4 Node.js 22 LTS\n\nNode.js 22 ships with native `fetch`, a built-in test runner, and improved ESM support. Projects started today should target the current LTS, not Node 14/16.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.4 Node.js 22 LTS",
+    "chunk_index": 5
+  },
+  {
+    "text": "### 2.5 MongoDB Atlas with connection pooling\n\nProduction MongoDB goes through Atlas (managed backups, monitoring, automatic failover). Connection pooling must be configured explicitly:\n\n```js\nmongoose.connect(process.env.MONGO_URI, {\n  maxPoolSize: 10,        // default is 5\n  serverSelectionTimeoutMS: 5000,\n  socketTimeoutMS: 45000,\n});\n```\n\nRetry logic on `ECONNRESET` and `MongoNetworkError` is mandatory for resilience.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.5 MongoDB Atlas with connection pooling",
+    "chunk_index": 6
+  },
+  {
+    "text": "### 2.6 Docker + CI/CD from day one\n\nContainerization ensures parity between local, staging, and production. CI/CD pipelines (GitHub Actions, GitLab CI) automatically run lint, type-check, tests, and build on every push. Deployment to Railway, Render, or AWS follows without manual steps.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.6 Docker + CI/CD from day one",
+    "chunk_index": 7
+  },
+  {
+    "text": "### 2.7 Structured logging and monitoring\n\nWinston for structured JSON logs, Sentry for error tracking, New Relic or Datadog for APM. Health check endpoints (`/health`, `/ready`) are required for load balancers and container orchestrators.\n\nSources:\n- [MERN Stack Production Deployment Checklist](https://navanathjadhav.medium.com/mern-stack-production-deployment-the-complete-checklist-for-going-live-975104e743f4)\n- [How to Build Production-Ready Full Stack Apps](https://freecodecamp.org/news/how-to-build-production-ready-full-stack-apps-with-the-mern-stack)\n- [Properly Deploy a MERN Application](https://www.baeldung.com/ops/mongodb-express-react-nodejs-app-deploy)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "2.7 Structured logging and monitoring",
+    "chunk_index": 8
+  },
+  {
+    "text": "### 3.1 Embed vs. reference — the decision rule\n\n| Relationship | Strategy | Why |\n|---|---|---|\n| One-to-few (e.g., order items) | Embed | Single read, atomically updated |\n| One-to-many (e.g., user → orders) | Reference | Documents stay bounded, queries stay fast |\n| Hybrid (e.g., product with top-3 reviews cached) | Partial embed + reference | Balance read speed with write cost |\n\nUnbounded arrays embedded in a document are a common production failure mode. An order with `items: [...]` is fine; a user document with `allOrderHistory: [...]` grows without bound.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.1 Embed vs. reference — the decision rule",
+    "chunk_index": 9
+  },
+  {
+    "text": "### 3.2 Compound indexes for real query patterns\n\nEvery field combination used in a filter or sort in production API endpoints should have a corresponding index. Missing indexes cause full collection scans — invisible in development, catastrophic under load.\n\n```js\n// Product listing: filter by category + sort by price\nproductSchema.index({ category: 1, price: 1 });\n\n// Order history: filter by user + sort by date\norderSchema.index({ user: 1, createdAt: -1 });\n\n// User lookup on login\nuserSchema.index({ email: 1 }, { unique: true });\n```\n\nRule: index fields used in `filter`, `sort`, and `unique` constraints. Avoid over-indexing — each index consumes RAM and slows writes. Use MongoDB Atlas's Index Advisor or Compass to identify missing indexes from slow query logs.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.2 Compound indexes for real query patterns",
+    "chunk_index": 10
+  },
+  {
+    "text": "### 3.3 `lean()` for read-only endpoints\n\nBy default, Mongoose returns full document instances with getters, setters, virtuals, and internal metadata. For list endpoints that only need to serialize and return data, `.lean()` returns plain JS objects and is 30–50% faster.\n\n```js\n// List endpoint — use lean()\nconst products = await Product.find({ category }).lean();\n\n// Requires mongoose document (save, virtuals) — skip lean()\nconst user = await User.findById(id);\nawait user.save();\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.3 `lean()` for read-only endpoints",
+    "chunk_index": 11
+  },
+  {
+    "text": "### 3.4 Virtuals for computed properties\n\nVirtuals are computed on read and not stored in MongoDB. Use them for derived values that would otherwise require storing redundant data:\n\n```js\nuserSchema.virtual('fullName').get(function () {\n  return `${this.firstName} ${this.lastName}`;\n});\n\norderSchema.virtual('total').get(function () {\n  return this.items.reduce((sum, item) => sum + item.price * item.qty, 0);\n});\n```\n\nCritical caveat: virtuals are not stored, so they cannot be queried or sorted on. If you need to filter by a computed value, store it explicitly and keep it in sync via a `pre('save')` hook.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.4 Virtuals for computed properties",
+    "chunk_index": 12
+  },
+  {
+    "text": "### 3.5 Hooks for cross-cutting concerns\n\nPre/post hooks keep business logic out of controllers and apply it uniformly regardless of call site.\n\n```js\n// Password hashing — pre('save') only, not findByIdAndUpdate\nuserSchema.pre('save', async function () {\n  if (!this.isModified('password')) return;\n  this.password = await bcrypt.hash(this.password, 12);\n});\n\n// Soft-delete filter applied to all find operations\nproductSchema.pre(/^find/, function () {\n  this.where({ deletedAt: null });\n});\n```\n\n**Critical gotcha**: `findByIdAndUpdate()` and `updateOne()` bypass `pre('save')` hooks entirely. They update MongoDB directly. Password change endpoints must use `doc.save()`, not `findByIdAndUpdate`, or the hook will not run and the password is stored in plaintext.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.5 Hooks for cross-cutting concerns",
+    "chunk_index": 13
+  },
+  {
+    "text": "### 3.6 Soft deletes over hard deletes\n\nMark documents with `deletedAt: Date` rather than removing them. This preserves order history, audit trails, and referential integrity. Apply a `pre(/^find/)` hook to exclude deleted documents automatically.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.6 Soft deletes over hard deletes",
+    "chunk_index": 14
+  },
+  {
+    "text": "### 3.7 Pagination — cursor-based for large collections\n\nOffset-based pagination (`skip(n).limit(20)`) is O(n) — MongoDB scans and discards the first n documents. For large catalogs, cursor-based pagination (filtering by `_id > lastSeenId`) is O(log n) after the index lookup.\n\nSources:\n- [Best Practices for Designing Scalable MongoDB Models with Mongoose](https://medium.com/%40babarbilal303/best-practices-for-designing-scalable-mongodb-models-with-mongoose-98972e6624e4)\n- [5 Mongoose Performance Mistakes That Slow Your App](https://medium.com/@arunangshudas/5-mongoose-performance-mistakes-that-slow-your-app-e204577b90f5)\n- [Mongoose Schemas and Creating a Model In Practice](https://thelinuxcode.com/mongoose-schemas-and-creating-a-model-in-practice-how-i-keep-mongodb-flexible-without-letting-it-drift/)\n- [How to Use Mongoose Pre and Post Middleware](https://oneuptime.com/blog/post/2026-03-31-mongodb-mongoose-pre-post-middleware/)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "3.7 Pagination — cursor-based for large collections",
+    "chunk_index": 15
+  },
+  {
+    "text": "### 4.1 RTK Query vs. TanStack Query — choose by existing stack\n\nBoth solve server-state caching. The decision is architectural:\n\n| Condition | Choice |\n|---|---|\n| Already using Redux for global state | RTK Query — colocates server and client state |\n| No Redux, starting fresh | TanStack Query — smaller bundle, framework-agnostic |\n| Next.js SSR-heavy | TanStack Query — better RSC/SSR support |\n| Complex admin with OpenAPI spec | RTK Query — code generation from Swagger |\n\nRTK Query bundle is ~40KB (includes Redux Toolkit); TanStack Query is ~16KB standalone. Don't adopt Redux solely for RTK Query.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "4.1 RTK Query vs. TanStack Query — choose by existing stack",
+    "chunk_index": 16
+  },
+  {
+    "text": "### 4.2 RTK Query cache invalidation via tags\n\nTags replace manual refetch logic. When a mutation completes, invalidated tags cause related queries to refetch automatically:\n\n```js\nconst api = createApi({\n  tagTypes: ['Product', 'Order', 'Cart'],\n  endpoints: (build) => ({\n    getProducts: build.query({\n      providesTags: ['Product'],\n    }),\n    createProduct: build.mutation({\n      invalidatesTags: ['Product'],  // triggers product list refetch\n    }),\n  }),\n});\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "4.2 RTK Query cache invalidation via tags",
+    "chunk_index": 17
+  },
+  {
+    "text": "### 4.3 Optimistic updates for cart interactions\n\nCart add/remove should feel instant. RTK Query's `onQueryStarted` lifecycle enables optimistic updates with automatic rollback on failure:\n\n```js\naddToCart: build.mutation({\n  async onQueryStarted(arg, { dispatch, queryFulfilled }) {\n    const patch = dispatch(\n      cartApi.util.updateQueryData('getCart', undefined, (draft) => {\n        draft.items.push(arg);\n      })\n    );\n    try {\n      await queryFulfilled;\n    } catch {\n      patch.undo();  // rolls back if server rejects\n    }\n  },\n}),\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "4.3 Optimistic updates for cart interactions",
+    "chunk_index": 18
+  },
+  {
+    "text": "### 4.4 Normalized state with `createEntityAdapter`\n\nFor product catalogs and order lists, `createEntityAdapter` provides CRUD operations and memoized selectors without hand-writing lookup logic:\n\n```js\nconst productsAdapter = createEntityAdapter();\nconst initialState = productsAdapter.getInitialState();\n\n// Selectors auto-generated:\nconst { selectAll, selectById, selectTotal } = productsAdapter.getSelectors(\n  (state) => state.products\n);\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "4.4 Normalized state with `createEntityAdapter`",
+    "chunk_index": 19
+  },
+  {
+    "text": "### 4.5 Separate server state from client state\n\nA common Redux mistake is putting everything in the store: fetched data (server state), UI toggles (client state), and form state. In 2026, the pattern is:\n\n- **Server state** (products, orders, user profile): RTK Query or TanStack Query cache\n- **Client/UI state** (modal open, selected tab, cart drawer): Redux slice or Zustand\n- **Form state**: React Hook Form (not Redux)",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "4.5 Separate server state from client state",
+    "chunk_index": 20
+  },
+  {
+    "text": "### 4.6 Classic Redux is not wrong, just verbose\n\nFor the `proshop_mern` codebase, the classic Redux pattern (action creators, reducers, thunks) works correctly — it is just boilerplate-heavy compared to RTK. The mental model is identical; RTK automates the repetitive parts.\n\nSources:\n- [Redux Essentials Part 8: RTK Query Advanced Patterns](http://redux.js.org/tutorials/essentials/part-8-rtk-query-advanced)\n- [Manual Cache Updates — Optimistic Updates](https://redux-toolkit.js.org/rtk-query/usage/optimistic-updates)\n- [Modern Redux with Redux Toolkit & RTK Query in 2025](https://rishikc.com/articles/modern-redux-toolkit-rtk-query-2025/)\n- [TanStack Query v5 vs SWR v3 vs RTK Query 2026](https://www.pkgpulse.com/blog/tanstack-query-v5-vs-swr-v3-vs-rtk-query-data-fetching-2026)\n- [TanStack Query vs Redux Toolkit Query in 2025](https://medium.com/@alifazmiruddin/tanstack-query-vs-redux-toolkit-query-in-2025-which-should-you-choose-7e2f18d1f709)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "4.6 Classic Redux is not wrong, just verbose",
+    "chunk_index": 21
+  },
+  {
+    "text": "### 5.1 Webhook-driven payment confirmation\n\nNever confirm an order based solely on the client-side PayPal callback. The browser is untrusted. The canonical 2026 pattern:\n\n1. Client initiates PayPal order (creates order on server → gets PayPal order ID)\n2. User completes payment in PayPal UI\n3. Client calls your API: `POST /orders/:id/pay` with PayPal order ID\n4. Server captures payment via PayPal REST API → confirms amount\n5. **Additionally**: PayPal sends `PAYMENT.CAPTURE.COMPLETED` webhook → second confirmation path\n\nWebhook is the authoritative confirmation. The synchronous capture call is for immediate UX response.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "5.1 Webhook-driven payment confirmation",
+    "chunk_index": 22
+  },
+  {
+    "text": "### 5.2 Idempotency keys — `PayPal-Request-Id`\n\nEvery PayPal REST API `POST` call should include a `PayPal-Request-Id` header with a UUID unique to that operation. This prevents double charges on network retries:\n\n```js\nconst { v4: uuidv4 } = require('uuid');\n\nawait paypalClient.execute(captureRequest, {\n  headers: {\n    'PayPal-Request-Id': `order-${orderId}-capture`,  // stable, idempotent\n    'Prefer': 'return=representation',\n  }\n});\n```\n\nUsing `order-${orderId}-capture` as the key (not a random UUID per attempt) ensures that a second call for the same order returns the first result rather than issuing a new charge.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "5.2 Idempotency keys — `PayPal-Request-Id`",
+    "chunk_index": 23
+  },
+  {
+    "text": "### 5.3 Webhook signature verification\n\nPayPal signs webhook payloads with RSA-SHA256. Verify on the raw body before processing:\n\n```js\napp.post('/webhooks/paypal', express.raw({ type: 'application/json' }), async (req, res) => {\n  const isValid = await verifyPayPalSignature(req.headers, req.body, process.env.PAYPAL_WEBHOOK_ID);\n  if (!isValid) return res.status(401).send('Invalid signature');\n\n  // Acknowledge immediately, then process async\n  res.status(200).send('OK');\n  processPayPalEvent(JSON.parse(req.body));\n});\n```\n\nAlways parse the body _after_ verification. Body parsers (JSON middleware) consume the raw buffer needed for signature validation.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "5.3 Webhook signature verification",
+    "chunk_index": 24
+  },
+  {
+    "text": "### 5.4 Idempotent webhook handlers\n\nPayPal retries failed webhook deliveries up to 25 times over 3 days. Your handler must be idempotent — processing the same event twice must have the same result as processing it once:\n\n```js\nasync function processPayPalEvent(event) {\n  const exists = await ProcessedEvent.findOne({ eventId: event.id });\n  if (exists) return;  // already handled\n\n  await handleEvent(event);\n  await ProcessedEvent.create({ eventId: event.id, processedAt: new Date() });\n}\n```\n\nUse a `ProcessedEvent` collection with a unique index on `eventId`, or Redis with TTL. Do not use `find + insert` — use `upsert` or atomic operations to prevent race conditions.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "5.4 Idempotent webhook handlers",
+    "chunk_index": 25
+  },
+  {
+    "text": "### 5.5 Sandbox/live environment separation\n\nRegister distinct sandbox and live webhook listeners. Never mix credentials. Use environment variables: `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE=sandbox|live`. The PayPal sandbox is reliable for manual testing; use the webhook simulator in the Developer Dashboard for event replay.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "5.5 Sandbox/live environment separation",
+    "chunk_index": 26
+  },
+  {
+    "text": "### 5.6 Double-charge prevention at the order level\n\nIn addition to idempotency keys, add a database-level guard: an order can only transition to `paid` state once. Implement with a Mongoose `enum` status field and an `updateOne` with a query filter:\n\n```js\nconst result = await Order.updateOne(\n  { _id: orderId, isPaid: false },  // guard: only update unpaid orders\n  { $set: { isPaid: true, paidAt: new Date(), paymentResult: captureData } }\n);\nif (result.modifiedCount === 0) {\n  // Order was already paid — idempotent no-op\n}\n```\n\nSources:\n- [Guide to PayPal Webhooks Features and Best Practices](https://hookdeck.com/webhooks/platforms/guide-to-paypal-webhooks-features-and-best-practices)\n- [PayPal Webhooks Guide: Secure Verification & Listener Setup](https://www.hooklistener.com/learn/paypal-webhooks-guide)\n- [PayPal Idempotency — Official Docs](https://developer.paypal.com/reference/guidelines/idempotency/)\n- [Node.js Webhooks: Idempotency Patterns That Save You](https://medium.com/@Quaxel/node-js-webhooks-idempotency-patterns-that-save-you-769ae4bb4ebc)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "5.6 Double-charge prevention at the order level",
+    "chunk_index": 27
+  },
+  {
+    "text": "### 6.1 Never store tokens in localStorage\n\n`localStorage` is accessible to any JavaScript running on the page, including injected code from XSS. A single compromised npm dependency can exfiltrate every token in `localStorage`. This is not a theoretical risk.\n\nThe 2026 consensus:\n\n| Storage | XSS Protection | CSRF Protection | Verdict |\n|---|---|---|---|\n| `localStorage` | None | Inherent | **Avoid** |\n| `httpOnly` cookie | High | Requires `SameSite` | **Recommended** |\n| In-memory (React state) | High | Inherent | Good for access tokens |",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.1 Never store tokens in localStorage",
+    "chunk_index": 28
+  },
+  {
+    "text": "### 6.2 Short-lived access tokens + refresh token rotation\n\nAccess tokens expire in 15 minutes. Refresh tokens last 7–30 days but are opaque (random strings stored server-side), not JWTs.\n\n```js\n// Access token — short-lived, stateless\nconst accessToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, {\n  expiresIn: '15m',\n  algorithm: 'HS256',\n});\n\n// Refresh token — long-lived, stored in DB, issued in httpOnly cookie\nres.cookie('refreshToken', newRefreshToken, {\n  httpOnly: true,\n  secure: true,           // HTTPS only\n  sameSite: 'Strict',\n  path: '/api/auth/refresh',  // scoped to refresh endpoint only\n  maxAge: 7 * 24 * 60 * 60 * 1000,  // 7 days\n});\n```\n\nOn each refresh: issue a new access token AND a new refresh token, revoke the old refresh token. If a refresh token is used twice (reuse detection), revoke the entire session family — this catches token theft.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.2 Short-lived access tokens + refresh token rotation",
+    "chunk_index": 29
+  },
+  {
+    "text": "### 6.3 Refresh token rotation (RTR) — detecting theft\n\nStore refresh tokens in a `RefreshToken` collection with `{ token, userId, used: false, expiresAt }`. On use:\n\n1. Find token by value. If not found → reject.\n2. If `used: true` → **revoke all sessions for this user** (token reuse = theft signal).\n3. Mark old token `used: true`, issue new token.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.3 Refresh token rotation (RTR) — detecting theft",
+    "chunk_index": 30
+  },
+  {
+    "text": "### 6.4 CSRF protection with `SameSite` cookies\n\n`httpOnly` cookies are immune to XSS but vulnerable to CSRF. Use `SameSite=Strict` (or `Lax` for OAuth flows) to prevent the browser from sending cookies on cross-site requests. For state-changing API calls, add a CSRF token header (double-submit cookie pattern) if `SameSite=Strict` is insufficient for your use case.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.4 CSRF protection with `SameSite` cookies",
+    "chunk_index": 31
+  },
+  {
+    "text": "### 6.5 Content Security Policy (CSP)\n\nCSP is the second layer of XSS defense, limiting what scripts can execute. Set via HTTP headers, not meta tags (meta tags can be bypassed by injected content):\n\n```\nContent-Security-Policy: default-src 'self'; script-src 'self'; connect-src 'self' https://api.paypal.com\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.5 Content Security Policy (CSP)",
+    "chunk_index": 32
+  },
+  {
+    "text": "### 6.6 Rate limiting on auth endpoints\n\nLogin, register, and token refresh endpoints must be rate-limited (e.g., express-rate-limit). Without rate limiting, brute force and credential stuffing attacks are trivial.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.6 Rate limiting on auth endpoints",
+    "chunk_index": 33
+  },
+  {
+    "text": "### 6.7 Algorithm lockdown\n\nExplicitly specify the expected algorithm when verifying tokens. The `alg: none` vulnerability (JWT with no signature accepted) was fixed in modern libraries but requires explicit configuration:\n\n```js\njwt.verify(token, process.env.JWT_SECRET, { algorithms: ['HS256'] });\n```\n\nSources:\n- [JWT Security Best Practices for 2025](https://jwt.app/blog/jwt-best-practices)\n- [JWT Best Practices: Security Tips for 2026](https://jsmanifest.com/jwt-security-best-practices-2026)\n- [JWT Authentication: Security Best Practices in 2026](https://ecosire.com/blog/jwt-authentication-best-practices)\n- [Secure JWT Authentication: Refresh Token Rotation and HttpOnly Cookies](https://blogdeveloperspot.blogspot.com/2026/03/secure-jwt-authentication-refresh-token.html)\n- [JWT Security Best Practices: Complete Guide for 2026](https://nyx-development.uk/dev-tools/blog/jwt-security/)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "6.7 Algorithm lockdown",
+    "chunk_index": 34
+  },
+  {
+    "text": "### 7.1 Core Web Vitals targets (2026)\n\nGoogle's ranking algorithm uses field data at the 75th percentile over 28 days. Only 39% of e-commerce sites pass all three metrics simultaneously:\n\n| Metric | Good | Needs Improvement | Poor |\n|---|---|---|---|\n| LCP (Largest Contentful Paint) | ≤ 2.5s | 2.5–4.0s | > 4.0s |\n| INP (Interaction to Next Paint) | ≤ 200ms | 200–500ms | > 500ms |\n| CLS (Cumulative Layout Shift) | ≤ 0.1 | 0.1–0.25 | > 0.25 |\n\nBusiness impact: every 0.1s of LCP improvement increases conversions by ~8% in retail (Google/Deloitte). A 1s improvement on a mid-size store can add thousands in monthly revenue.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "7.1 Core Web Vitals targets (2026)",
+    "chunk_index": 35
+  },
+  {
+    "text": "### 7.2 Performance budgets\n\nSet budgets as hard limits in CI:\n\n| Asset | Target |\n|---|---|\n| Total JavaScript (compressed) | < 300 KB |\n| Total CSS (compressed) | < 80 KB |\n| Hero image | < 200 KB |\n| Total page weight | < 1.5 MB (mobile) |\n| Third-party scripts | ≤ 5 |\n| TTFB (Time to First Byte) | < 200ms |\n| LCP internal target | < 2.0s (buffer below 2.5s) |",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "7.2 Performance budgets",
+    "chunk_index": 36
+  },
+  {
+    "text": "### 7.3 Image optimization pipeline\n\nUnoptimized product images are the #1 performance failure in e-commerce:\n\n- Serve **WebP** (30–40% smaller than JPEG) with AVIF as next-gen option\n- Use a CDN (Cloudinary, Imgix, or Cloudflare Images) for on-the-fly format conversion, resizing, and compression\n- `loading=\"lazy\"` on all below-fold images; `fetchpriority=\"high\"` on the LCP hero image\n- Set explicit `width` and `height` to prevent Cumulative Layout Shift\n- Never lazy-load the largest image in the first viewport\n\n```html\n<!-- Hero image — above fold, prioritize -->\n<img src=\"/hero.webp\" fetchpriority=\"high\" width=\"1200\" height=\"600\" alt=\"...\" />\n\n<!-- Product thumbnails — below fold, lazy load -->\n<img src=\"/product-42.webp\" loading=\"lazy\" width=\"300\" height=\"300\" alt=\"...\" />\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "7.3 Image optimization pipeline",
+    "chunk_index": 37
+  },
+  {
+    "text": "### 7.4 Code splitting with `React.lazy`\n\nSplit the bundle by route so users download only what they need for the current page:\n\n```js\nconst AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));\nconst ProductDetail = React.lazy(() => import('./pages/ProductDetail'));\n```\n\nHeavy components (carousels, rich text editors, chart libraries) should be lazy-loaded even within a page.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "7.4 Code splitting with `React.lazy`",
+    "chunk_index": 38
+  },
+  {
+    "text": "### 7.5 Server response time — TTFB under 200ms\n\nLCP cannot be faster than TTFB. A slow server makes every frontend optimization irrelevant. Key levers:\n\n- CDN with edge caching for product pages (ISR with 60s revalidation)\n- Database query optimization (compound indexes, lean(), projections)\n- Connection pooling for MongoDB\n- Response compression (gzip/brotli via Express `compression` middleware)",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "7.5 Server response time — TTFB under 200ms",
+    "chunk_index": 39
+  },
+  {
+    "text": "### 7.6 Virtualize long lists\n\nA product listing with 500 items in the DOM is a browser performance disaster. Use `react-window` or `@tanstack/react-virtual` to render only the visible rows.\n\nSources:\n- [Core Web Vitals for E-commerce in 2026](https://ecomdesignpro.com/core-web-vitals-ecommerce/)\n- [Core Web Vitals 2026: INP, LCP & CLS Optimization](https://www.digitalapplied.com/blog/core-web-vitals-2026-inp-lcp-cls-optimization-guide)\n- [How to optimize images in React for better web performance](https://blog.logrocket.com/optimize-images-in-react/)\n- [React Performance Optimization: 15 Best Practices for 2025](https://dev.to/alex_bobes/react-performance-optimization-15-best-practices-for-2025-17l9)\n- [Lazy Loading + Image CDN — Cut Initial Page Load by 50–70%](https://theimagecdn.com/docs/lazy-loading-image-cdn)\n- [Core Web Vitals for Ecommerce: Complete Guide 2026](https://ighenatt.es/en/resources/core-web-vitals/core-web-vitals-ecommerce/)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "7.6 Virtualize long lists",
+    "chunk_index": 40
+  },
+  {
+    "text": "### 8.1 Decouple deployment from release\n\nThe core principle: code reaches production before users see it. A feature flag controls visibility independently of the deployment. This makes every deploy a non-event — you can ship code on Friday and flip the flag on Tuesday after monitoring.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.1 Decouple deployment from release",
+    "chunk_index": 41
+  },
+  {
+    "text": "### 8.2 OpenFeature — vendor-neutral standard\n\nIn 2026, [OpenFeature](https://openfeature.dev) (CNCF project) is the open standard for feature flag evaluation. It provides a vendor-agnostic SDK that works with LaunchDarkly, Unleash, Flagsmith, or a self-hosted provider:\n\n```js\nconst { OpenFeature } = require('@openfeature/server-sdk');\n\nawait OpenFeature.setProviderAndWait(new YourProvider());\nconst client = OpenFeature.getClient();\n\nconst newCheckoutEnabled = await client.getBooleanValue(\n  'new-checkout-flow',\n  false,  // default if flag unavailable\n  { targetingKey: req.user.id }\n);\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.2 OpenFeature — vendor-neutral standard",
+    "chunk_index": 42
+  },
+  {
+    "text": "### 8.3 Progressive rollout — canary pattern\n\n```\nDay 1: Internal team only (0.1%)\nDay 3: 1% of users\nDay 5: 10% — monitor error rates and conversion\nDay 7: 50%\nDay 9: 100%\n```\n\nEach stage gates on observability metrics. If error rates spike at 10%, flip the flag off — no redeployment needed.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.3 Progressive rollout — canary pattern",
+    "chunk_index": 43
+  },
+  {
+    "text": "### 8.4 Blue-green vs. canary — choosing the strategy\n\n| Strategy | Downtime | Rollback Speed | Best For |\n|---|---|---|---|\n| Blue-Green | None | Instant (flip load balancer) | High-stakes schema changes, major rewrites |\n| Canary | None | Fast (reduce canary weight to 0) | New features, algorithm changes |\n| Feature Flags | None | Instant (toggle flag) | UI changes, business logic, A/B tests |\n\nFeature flags operate at the application layer (user-level targeting). Blue-green and canary operate at the infrastructure layer (traffic routing). Use them together.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.4 Blue-green vs. canary — choosing the strategy",
+    "chunk_index": 44
+  },
+  {
+    "text": "### 8.5 Kill switches\n\nEvery significant new feature ships with a kill switch flag: a boolean that defaults to `false` (new feature off). If the feature causes incidents, flip the flag from any admin UI without touching code or infrastructure.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.5 Kill switches",
+    "chunk_index": 45
+  },
+  {
+    "text": "### 8.6 Flag lifecycle management\n\nFlags have four states: `created → active → rolled-out → archived`. Flags that have been at 100% for 30+ days should be archived and the conditional code removed. Flag debt (stale flags) accumulates fast in active codebases.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.6 Flag lifecycle management",
+    "chunk_index": 46
+  },
+  {
+    "text": "### 8.7 Backend A/B testing\n\nFeature flags enable backend experiments: route 50% of users to Algorithm A, 50% to Algorithm B, measure conversion rate difference. This works for search ranking, recommendation engines, pricing logic, and checkout flows.\n\nSources:\n- [Feature Flags in Node.js with OpenFeature 2026](https://1xapi.com/blog/feature-flags-nodejs-openfeature-2026-guide)\n- [Node.js Canary Deploys with Feature Flags: Safe Releases at Scale](https://medium.com/@kaushalsinh73/node-js-canary-deploys-with-feature-flags-safe-releases-at-scale-f1d743f33e7b)\n- [Release Engineering Playbook: Blue/Green, Canary, and Feature Rollouts](https://certvanta.com/blog/2025/08/release_engineering_playbook_blue_green_canary_rollouts)\n- [Ship Faster, Safer: A Guide to Feature Flags for Canary Releases & A/B Testing](https://www.meerako.com/blogs/feature-flags-guide-canary-release-ab-testing-launchdarkly)\n- [Feature Flagging Strategies for Continuous Deployment](https://dev.to/yash_pritwani_07a77613fd6/feature-flagging-strategies-for-continuous-deployment-ship-daily-without-breaking-anything-43ci)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "8.7 Backend A/B testing",
+    "chunk_index": 47
+  },
+  {
+    "text": "### 9.1 Role-Based Access Control (RBAC)\n\nRBAC assigns permissions to roles, not directly to users. A user has one or more roles; roles have sets of permissions. This scales: adding a new role doesn't require code changes, only a database record.\n\nMinimal role set for e-commerce:\n- `customer` — read own orders, update own profile\n- `support` — read all orders, update order status (no delete)\n- `product_manager` — CRUD products and categories\n- `admin` — all of the above + user management, financial data\n\n```js\n// Middleware: check permission, not role\nfunction requirePermission(permission) {\n  return (req, res, next) => {\n    if (!req.user.permissions.includes(permission)) {\n      logAuthorizationFailure(req, permission);  // always log failures\n      return res.status(403).json({ error: 'Forbidden' });\n    }\n    next();\n  };\n}\n\nrouter.delete('/products/:id', requirePermission('products:delete'), deleteProduct);\n```",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "9.1 Role-Based Access Control (RBAC)",
+    "chunk_index": 48
+  },
+  {
+    "text": "### 9.2 Permissions in the database, not the codebase\n\nHard-coded role checks (`if (user.role === 'admin')`) scattered across routes are unmaintainable. Store permissions in MongoDB, load on authentication, cache in the JWT claims or session:\n\n```\nRole document: { name: 'support', permissions: ['orders:read', 'orders:update_status'] }\nUser document: { roles: ['support'] }\n```\n\nWhen a role's permissions change, the next login picks up the new set without redeployment.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "9.2 Permissions in the database, not the codebase",
+    "chunk_index": 49
+  },
+  {
+    "text": "### 9.3 Immutable audit log\n\nEvery admin action (product created/updated/deleted, order status changed, refund issued, user role modified) must be logged. The audit log is write-only — no update or delete API:\n\n```js\nconst auditLogSchema = new mongoose.Schema({\n  userId:    { type: mongoose.Schema.Types.ObjectId, index: true },\n  action:    { type: String, required: true },\n  resource:  { type: String, required: true },\n  resourceId: { type: mongoose.Schema.Types.ObjectId },\n  before:    { type: Object },  // state before change\n  after:     { type: Object },  // state after change\n  ipAddress: { type: String },\n  userAgent: { type: String },\n  createdAt: { type: Date, default: Date.now, immutable: true },\n}, { versionKey: false });\n\n// Compound index for common queries: user activity + time\nauditLogSchema.index({ userId: 1, createdAt: -1 });\n// TTL index for retention (e.g., 2 years)\nauditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 63072000 });\n```\n\n`immutable: true` on `createdAt` prevents updates at the Mongoose level. Expose only `create` and `read` APIs — no `update` or `delete`.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "9.3 Immutable audit log",
+    "chunk_index": 50
+  },
+  {
+    "text": "### 9.4 Bulk operations — safety patterns\n\nAdmin bulk actions (delete 500 products, mark 200 orders as shipped) need:\n\n1. **Preview step**: show count and sample before executing\n2. **Confirmation dialog**: explicit user acknowledgment\n3. **Batch processing**: execute in chunks (e.g., 100 at a time) to avoid timeout and memory pressure\n4. **Audit logging**: log the bulk action with filter criteria and count, not individual records\n5. **Undo within time window**: soft delete + 30-second undo window before hard commit",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "9.4 Bulk operations — safety patterns",
+    "chunk_index": 51
+  },
+  {
+    "text": "### 9.5 Authorization failure logging\n\nEvery 403 response should be logged with user ID, role, attempted endpoint, and timestamp. Patterns of authorization failures indicate misconfiguration, bugs, or probing attacks.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "9.5 Authorization failure logging",
+    "chunk_index": 52
+  },
+  {
+    "text": "### 9.6 Server-side permission checks are mandatory\n\nClient-side role checks (hiding buttons, disabling routes) are UX improvements, not security. The API must enforce permissions on every request regardless of what the UI shows. Never trust client-supplied role claims in request bodies.\n\nSources:\n- [How to Implement Role-Based Access Control in Node.js and Express](https://www.boxsoftware.net/how-to-implement-role-based-access-control-in-node-js-and-express/)\n- [How to Implement RBAC in an Express.js Application](https://permit.io/blog/how-to-implement-rbac-in-an-expressjs-application)\n- [How to Build Secure Audit Logging in Node.js](https://www.sevensquaretech.com/secure-audit-logging-activity-trail-nodejs-with-code/)\n- [How to Model an Event Logging System in MongoDB](https://oneuptime.com/blog/post/2026-03-31-mongodb-how-to-model-an-event-logging-system-in-mongodb/)\n- [Audit Logging Looked Like a Weekend Project. It Took Us 3 Months.](https://dev.to/robertatkinson3570/audit-logging-looked-like-a-weekend-project-it-took-us-3-months-509o)\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "9.6 Server-side permission checks are mandatory",
+    "chunk_index": 53
+  },
+  {
+    "text": "## 10. Concrete Patterns to Apply to proshop_mern\n\nThese are guidance-level TODOs — what an engineering team would do when migrating this codebase to 2026 production standards. They are not a refactoring task; they are a learning exercise in reading a codebase and identifying gaps.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "10. Concrete Patterns to Apply to proshop_mern",
+    "chunk_index": 54
+  },
+  {
+    "text": "### Authentication & JWT\n\n- [ ] **Move JWT from `localStorage` to `httpOnly` cookie**: change `localStorage.setItem('userInfo', ...)` in Redux auth slice to receive a `Set-Cookie` header. Add `credentials: 'include'` to all fetch calls.\n- [ ] **Add refresh token endpoint**: store refresh tokens in a `RefreshToken` MongoDB collection. Add `POST /api/auth/refresh` route. Set refresh token cookie with `path: '/api/auth/refresh'` to scope it.\n- [ ] **Add refresh token rotation**: on each refresh, mark old token used, detect reuse, revoke session family on reuse detection.\n- [ ] **Rate-limit auth routes**: add `express-rate-limit` to `/api/users/login` and `/api/auth/refresh` (e.g., 10 attempts per 15 minutes per IP).\n- [ ] **Lock JWT algorithm**: add `{ algorithms: ['HS256'] }` to all `jwt.verify()` calls.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Authentication & JWT",
+    "chunk_index": 55
+  },
+  {
+    "text": "### Mongoose / Database\n\n- [ ] **Add compound indexes**: `Product.index({ category: 1, price: 1 })`, `Order.index({ user: 1, createdAt: -1 })`, `User.index({ email: 1 }, { unique: true })`.\n- [ ] **Add `.lean()` to list endpoints**: all `GET /api/products` and `GET /api/orders` (admin) routes that just serialize and return data.\n- [ ] **Verify password hashing hook**: confirm the `pre('save')` hook runs on password updates. If any controller uses `findByIdAndUpdate` for password changes, switch to `doc.save()`.\n- [ ] **Add soft delete to products**: add `deletedAt: Date` field, `pre(/^find/)` filter hook, and change `router.delete` to set `deletedAt` rather than remove.\n- [ ] **Migrate from offset to cursor pagination**: replace `skip(pageNumber * pageSize).limit(pageSize)` with filter-based pagination for the product catalog.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Mongoose / Database",
+    "chunk_index": 56
+  },
+  {
+    "text": "### PayPal Integration\n\n- [ ] **Add PayPal-Request-Id header**: generate `order-${orderId}-capture` as the idempotency key for every capture call.\n- [ ] **Add webhook endpoint**: register `POST /api/webhooks/paypal` with `express.raw()` middleware (before JSON middleware parses the body). Verify signature, acknowledge with 200, process async.\n- [ ] **Add ProcessedEvent deduplication**: store processed PayPal event IDs in a `ProcessedEvents` collection with unique index on `eventId`.\n- [ ] **Guard payment state at DB level**: change the pay route to use `Order.updateOne({ _id: id, isPaid: false }, ...)` and check `modifiedCount === 0` as a double-charge guard.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "PayPal Integration",
+    "chunk_index": 57
+  },
+  {
+    "text": "### Frontend Performance\n\n- [ ] **Replace CRA with Vite**: migrate build tool. This is a significant but well-documented migration path (see [vitejs.dev/guide/migration](https://vitejs.dev/guide/migration)).\n- [ ] **Add route-based code splitting**: wrap `<AdminScreen>`, `<ProfileScreen>`, `<OrderScreen>` in `React.lazy()` and `<Suspense>`.\n- [ ] **Optimize product images**: serve WebP from an image CDN (Cloudinary free tier works). Add `loading=\"lazy\"` to all product card `<img>` tags. Set explicit `width` and `height`.\n- [ ] **Add response compression**: add `compression` middleware to Express server.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Frontend Performance",
+    "chunk_index": 58
+  },
+  {
+    "text": "### State Management\n\n- [ ] **Annotate Redux slices as RTK candidates**: identify which slices are pure server state (products, orders, user) vs. client state (cart UI, modal). Server state slices are candidates for RTK Query migration.\n- [ ] **Add optimistic cart updates**: implement `onQueryStarted` with rollback for add-to-cart mutation if migrating to RTK Query.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "State Management",
+    "chunk_index": 59
+  },
+  {
+    "text": "### Admin / RBAC\n\n- [ ] **Replace `isAdmin` boolean with role array**: change `User.isAdmin` to `User.roles: ['admin']` and add a `permissions` resolver. Update auth middleware accordingly.\n- [ ] **Add audit log collection**: create `AuditLog` Mongoose model with `immutable: true` on `createdAt`. Log all admin mutations (product create/update/delete, order status change).\n- [ ] **Add permission middleware factory**: replace inline `if (!req.user.isAdmin)` checks with `requirePermission('products:delete')` middleware.\n- [ ] **Add bulk action safety UI**: confirm dialogs + preview count before executing bulk order updates.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Admin / RBAC",
+    "chunk_index": 60
+  },
+  {
+    "text": "### Reliability\n\n- [ ] **Add health check endpoint**: `GET /health` returns `{ status: 'ok', db: 'connected' }`. Required for load balancers and container orchestrators.\n- [ ] **Add graceful shutdown**: handle `SIGTERM` to close MongoDB connection and drain in-flight requests before exiting.\n- [ ] **Add structured logging**: replace `console.log` with Winston. Log level, timestamp, request ID, and error stack in JSON.\n\n---",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Reliability",
+    "chunk_index": 61
+  },
+  {
+    "text": "## References\n\nAll sources are publicly available. Retrieved April 2026.",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "References",
+    "chunk_index": 62
+  },
+  {
+    "text": "### MERN Production Patterns\n1. https://medium.com/@lomcos/how-to-build-a-production-ready-mern-stack-app-in-2026-cc5dc9d8bd81\n2. https://dev.to/krunal_groovy/the-production-mern-stack-guide-for-2026-not-another-todo-app-4n31\n3. https://www.baeldung.com/ops/mongodb-express-react-nodejs-app-deploy\n4. https://navanathjadhav.medium.com/mern-stack-production-deployment-the-complete-checklist-for-going-live-975104e743f4\n5. https://freecodecamp.org/news/how-to-build-production-ready-full-stack-apps-with-the-mern-stack\n6. https://www.technetexperts.com/mern-nextjs-ecommerce-architecture/",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "MERN Production Patterns",
+    "chunk_index": 63
+  },
+  {
+    "text": "### Mongoose Schema Design\n7. https://medium.com/%40babarbilal303/best-practices-for-designing-scalable-mongodb-models-with-mongoose-98972e6624e4\n8. https://dev.to/babar_bilal_2e14c231dfa8d/best-practices-for-designing-scalable-mongodb-models-with-mongoose-10nm\n9. https://medium.com/@arunangshudas/5-mongoose-performance-mistakes-that-slow-your-app-e204577b90f5\n10. https://moldstud.com/articles/p-optimizing-mongoose-schema-design-for-performance\n11. https://thelinuxcode.com/mongoose-schemas-and-creating-a-model-in-practice-how-i-keep-mongodb-flexible-without-letting-it-drift/\n12. https://oneuptime.com/blog/post/2026-03-31-mongodb-mongoose-pre-post-middleware/view\n13. https://www.stacklesson.com/mern-stack-tutorial/mern-mongoose-schemas/ch12-lesson-04-mongoose-middleware-pre-post-hooks/",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Mongoose Schema Design",
+    "chunk_index": 64
+  },
+  {
+    "text": "### Redux / State Management\n14. http://redux.js.org/tutorials/essentials/part-8-rtk-query-advanced\n15. https://redux-toolkit.js.org/rtk-query/usage/optimistic-updates\n16. https://rishikc.com/articles/modern-redux-toolkit-rtk-query-2025/\n17. https://www.pkgpulse.com/blog/tanstack-query-v5-vs-swr-v3-vs-rtk-query-data-fetching-2026\n18. https://medium.com/@alifazmiruddin/tanstack-query-vs-redux-toolkit-query-in-2025-which-should-you-choose-7e2f18d1f709\n19. https://beta.refine.dev/blog/rtk-query-redux-toolkit-2025/",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Redux / State Management",
+    "chunk_index": 65
+  },
+  {
+    "text": "### PayPal Integration\n20. https://hookdeck.com/webhooks/platforms/guide-to-paypal-webhooks-features-and-best-practices\n21. https://medium.com/@Quaxel/node-js-webhooks-idempotency-patterns-that-save-you-769ae4bb4ebc\n22. https://developer.paypal.com/reference/guidelines/idempotency/\n23. https://developer.paypal.com/docs/platforms/develop/idempotency/\n24. https://www.hooklistener.com/learn/paypal-webhooks-guide",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "PayPal Integration",
+    "chunk_index": 66
+  },
+  {
+    "text": "### JWT Security\n25. https://jwt.app/blog/jwt-best-practices\n26. https://blogdeveloperspot.blogspot.com/2026/03/secure-jwt-authentication-refresh-token.html\n27. https://jsmanifest.com/jwt-security-best-practices-2026\n28. https://ecosire.com/blog/jwt-authentication-best-practices\n29. https://nyx-development.uk/dev-tools/blog/jwt-security/",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "JWT Security",
+    "chunk_index": 67
+  },
+  {
+    "text": "### Performance\n30. https://dev.to/seyedahmaddv/how-i-achieved-a-95-lighthouse-performance-score-in-a-nextjs-e-commerce-site-and-how-you-can-2pe5\n31. https://dev.to/alex_bobes/react-performance-optimization-15-best-practices-for-2025-17l9\n32. https://blog.logrocket.com/optimize-images-in-react/\n33. https://theimagecdn.com/docs/lazy-loading-image-cdn\n34. https://ecomdesignpro.com/core-web-vitals-ecommerce/\n35. https://ighenatt.es/en/resources/core-web-vitals/core-web-vitals-ecommerce/\n36. https://www.digitalapplied.com/blog/core-web-vitals-2026-inp-lcp-cls-optimization-guide",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Performance",
+    "chunk_index": 68
+  },
+  {
+    "text": "### Feature Flags\n37. https://1xapi.com/blog/feature-flags-nodejs-openfeature-2026-guide\n38. https://medium.com/@kaushalsinh73/node-js-canary-deploys-with-feature-flags-safe-releases-at-scale-f1d743f33e7b\n39. https://certvanta.com/blog/2025/08/release_engineering_playbook_blue_green_canary_rollouts\n40. https://www.meerako.com/blogs/feature-flags-guide-canary-release-ab-testing-launchdarkly\n41. https://dev.to/yash_pritwani_07a77613fd6/feature-flagging-strategies-for-continuous-deployment-ship-daily-without-breaking-anything-43ci",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Feature Flags",
+    "chunk_index": 69
+  },
+  {
+    "text": "### Admin / RBAC / Audit Logging\n42. https://www.boxsoftware.net/how-to-implement-role-based-access-control-in-node-js-and-express/\n43. https://permit.io/blog/how-to-implement-rbac-in-an-expressjs-application\n44. https://www.sevensquaretech.com/secure-audit-logging-activity-trail-nodejs-with-code/\n45. https://oneuptime.com/blog/post/2026-03-31-mongodb-how-to-model-an-event-logging-system-in-mongodb/\n46. https://dev.to/robertatkinson3570/audit-logging-looked-like-a-weekend-project-it-took-us-3-months-509o\n47. https://github.com/thihaswe/rbac-expressjs-starter",
+    "source": "best-practices.md",
+    "category": "core",
+    "title": "MERN E-commerce Best Practices 2026",
+    "section": "Admin / RBAC / Audit Logging",
+    "chunk_index": 70
+  }
+]

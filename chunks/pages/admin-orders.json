@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAdmin users only. Non-admin users and unauthenticated users are redirected to login.",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA heading \"Orders\" with a table listing all orders in the system. Table columns: ID, User (customer name), Date (order creation date), Total (total price), Paid (payment date or X icon if unpaid), Delivered (delivery date or X icon if undelivered), and Details button.\n\nEach row represents one order. The Details button navigates to the full order view.",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `orderList` slice: `loading`, `error`, `orders` array\n- `userLogin` slice: `userInfo` (used for admin access control)",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On mount**: `GET /api/orders` via `listOrders()` action to fetch all orders",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **Table** (Bootstrap) – responsive striped table\n- **Button** – Details action button per row\n- **Message** – error alert display\n- **Loader** – loading spinner during fetch\n- **LinkContainer** – wraps Details button for navigation",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Click Details button**: Navigates to `/order/:id` to view full order details and manage payment/delivery status",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- User not authenticated: Redirected to login on mount (guard in useEffect)\n- User not admin: Redirected to login on mount\n- Empty orders list: Table renders with no body rows\n- Loading state: Spinner replaces table\n- API error on initial fetch: Error message displayed, table hidden\n- User name missing: Shows null or empty string (fallback: `order.user && order.user.name`)\n- Unpaid order: Paid column shows red X icon\n- Undelivered order: Delivered column shows red X icon\n- Paid order: Paid column shows date (substring 0-10)\n- Delivered order: Delivered column shows date (substring 0-10)",
+    "source": "pages/admin-orders.md",
+    "category": "core",
+    "title": "Admin Orders List Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

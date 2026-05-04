@@ -1,0 +1,82 @@
+[
+  {
+    "text": "## Overview\n\nOrder endpoints manage the complete order lifecycle including creation, retrieval, and payment/delivery status tracking. Users can create orders and view their own orders; admins can view all orders and mark orders as paid/delivered.",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "Overview",
+    "chunk_index": 0
+  },
+  {
+    "text": "### POST /api/orders\n\nCreate a new order with items and shipping information.\n\n**Auth:** Private  \n**Description:** Create order from cart contents\n\n**Headers:**\n```\nAuthorization: Bearer {user-token}\n```\n\n**Request body:**\n```json\n{\n  \"orderItems\": [\n    {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"name\": \"Wireless Headphones\",\n      \"image\": \"/images/headphones.jpg\",\n      \"price\": 129.99,\n      \"qty\": 2,\n      \"product\": \"507f1f77bcf86cd799439011\"\n    }\n  ],\n  \"shippingAddress\": {\n    \"address\": \"123 Main Street\",\n    \"city\": \"Springfield\",\n    \"postalCode\": \"12345\",\n    \"country\": \"USA\"\n  },\n  \"paymentMethod\": \"PayPal\",\n  \"itemsPrice\": 259.98,\n  \"taxPrice\": 20.80,\n  \"shippingPrice\": 10.00,\n  \"totalPrice\": 290.78\n}\n```\n\n**Response 201 (Created):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439051\",\n  \"user\": \"507f1f77bcf86cd799439001\",\n  \"orderItems\": [\n    {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"name\": \"Wireless Headphones\",\n      \"image\": \"/images/headphones.jpg\",\n      \"price\": 129.99,\n      \"qty\": 2,\n      \"product\": \"507f1f77bcf86cd799439011\"\n    }\n  ],\n  \"shippingAddress\": {\n    \"address\": \"123 Main Street\",\n    \"city\": \"Springfield\",\n    \"postalCode\": \"12345\",\n    \"country\": \"USA\"\n  },\n  \"paymentMethod\": \"PayPal\",\n  \"itemsPrice\": 259.98,\n  \"taxPrice\": 20.80,\n  \"shippingPrice\": 10.00,\n  \"totalPrice\": 290.78,\n  \"isPaid\": false,\n  \"isDelivered\": false,\n  \"createdAt\": \"2024-01-20T14:30:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 400: No order items (orderItems array is empty)\n\n**Notes:**\n- orderItems array must contain at least one item\n- User ID is set from authenticated user\n- Order starts with isPaid: false and isDelivered: false\n- All price fields must be provided in request\n- Prices are stored as-is; no server-side calculation\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "POST /api/orders",
+    "chunk_index": 1
+  },
+  {
+    "text": "### GET /api/orders/myorders\n\nRetrieve all orders for the authenticated user.\n\n**Auth:** Private  \n**Description:** Get current user's order history\n\n**Headers:**\n```\nAuthorization: Bearer {user-token}\n```\n\n**Query Parameters:** None\n\n**Response 200 (Success):**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439051\",\n    \"user\": \"507f1f77bcf86cd799439001\",\n    \"orderItems\": [\n      {\n        \"_id\": \"507f1f77bcf86cd799439011\",\n        \"name\": \"Wireless Headphones\",\n        \"price\": 129.99,\n        \"qty\": 2,\n        \"product\": \"507f1f77bcf86cd799439011\"\n      }\n    ],\n    \"shippingAddress\": {\n      \"address\": \"123 Main Street\",\n      \"city\": \"Springfield\"\n    },\n    \"paymentMethod\": \"PayPal\",\n    \"totalPrice\": 290.78,\n    \"isPaid\": true,\n    \"paidAt\": \"2024-01-21T10:15:00.000Z\",\n    \"isDelivered\": false,\n    \"createdAt\": \"2024-01-20T14:30:00.000Z\"\n  }\n]\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n\n**Notes:**\n- Returns all orders for authenticated user\n- Orders not filtered or paginated\n- Empty array if user has no orders\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "GET /api/orders/myorders",
+    "chunk_index": 2
+  },
+  {
+    "text": "### GET /api/orders/:id\n\nRetrieve detailed information about a specific order.\n\n**Auth:** Private  \n**Description:** Get order details by order ID\n\n**Headers:**\n```\nAuthorization: Bearer {user-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the order\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439051\",\n  \"user\": {\n    \"_id\": \"507f1f77bcf86cd799439001\",\n    \"name\": \"John Doe\",\n    \"email\": \"john@example.com\"\n  },\n  \"orderItems\": [\n    {\n      \"_id\": \"507f1f77bcf86cd799439011\",\n      \"name\": \"Wireless Headphones\",\n      \"image\": \"/images/headphones.jpg\",\n      \"price\": 129.99,\n      \"qty\": 2,\n      \"product\": \"507f1f77bcf86cd799439011\"\n    }\n  ],\n  \"shippingAddress\": {\n    \"address\": \"123 Main Street\",\n    \"city\": \"Springfield\",\n    \"postalCode\": \"12345\",\n    \"country\": \"USA\"\n  },\n  \"paymentMethod\": \"PayPal\",\n  \"itemsPrice\": 259.98,\n  \"taxPrice\": 20.80,\n  \"shippingPrice\": 10.00,\n  \"totalPrice\": 290.78,\n  \"isPaid\": true,\n  \"paidAt\": \"2024-01-21T10:15:00.000Z\",\n  \"paymentResult\": {\n    \"id\": \"PAY-123456\",\n    \"status\": \"COMPLETED\",\n    \"update_time\": \"2024-01-21T10:15:00Z\",\n    \"email_address\": \"john@example.com\"\n  },\n  \"isDelivered\": false,\n  \"createdAt\": \"2024-01-20T14:30:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 404: Order not found\n\n**Notes:**\n- User object is populated with name and email\n- Returns complete order with all nested details\n- paymentResult only present if order is paid\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "GET /api/orders/:id",
+    "chunk_index": 3
+  },
+  {
+    "text": "### PUT /api/orders/:id/pay\n\nMark an order as paid with payment details from PayPal.\n\n**Auth:** Private  \n**Description:** Update order payment status\n\n**Headers:**\n```\nAuthorization: Bearer {user-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the order\n\n**Request body:**\n```json\n{\n  \"id\": \"PAY-123456789\",\n  \"status\": \"COMPLETED\",\n  \"update_time\": \"2024-01-21T10:15:00Z\",\n  \"payer\": {\n    \"email_address\": \"john@example.com\"\n  }\n}\n```\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439051\",\n  \"user\": \"507f1f77bcf86cd799439001\",\n  \"orderItems\": [...],\n  \"isPaid\": true,\n  \"paidAt\": \"2024-01-21T10:15:00.000Z\",\n  \"paymentResult\": {\n    \"id\": \"PAY-123456789\",\n    \"status\": \"COMPLETED\",\n    \"update_time\": \"2024-01-21T10:15:00Z\",\n    \"email_address\": \"john@example.com\"\n  },\n  \"totalPrice\": 290.78,\n  \"createdAt\": \"2024-01-20T14:30:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 404: Order not found\n\n**Notes:**\n- Sets isPaid to true\n- paidAt set to current timestamp (Date.now())\n- paymentResult stores PayPal transaction details\n- email_address extracted from payer object\n- Typically called by frontend after PayPal callback\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "PUT /api/orders/:id/pay",
+    "chunk_index": 4
+  },
+  {
+    "text": "### PUT /api/orders/:id/deliver\n\nMark an order as delivered. Admin only.\n\n**Auth:** Private/Admin  \n**Description:** Update order delivery status\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**URL Parameters:**\n- `id` (string, required): MongoDB ObjectId of the order\n\n**Request body:** None\n\n**Response 200 (Success):**\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439051\",\n  \"user\": \"507f1f77bcf86cd799439001\",\n  \"orderItems\": [...],\n  \"isPaid\": true,\n  \"paidAt\": \"2024-01-21T10:15:00.000Z\",\n  \"isDelivered\": true,\n  \"deliveredAt\": \"2024-01-25T14:45:00.000Z\",\n  \"totalPrice\": 290.78,\n  \"createdAt\": \"2024-01-20T14:30:00.000Z\"\n}\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n- 404: Order not found\n\n**Notes:**\n- Sets isDelivered to true\n- deliveredAt set to current timestamp\n- Admin-only operation\n- Order must exist but does not require isPaid: true\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "PUT /api/orders/:id/deliver",
+    "chunk_index": 5
+  },
+  {
+    "text": "### GET /api/orders\n\nRetrieve all orders in the system. Admin only.\n\n**Auth:** Private/Admin  \n**Description:** Get all orders (admin only)\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\n```\n\n**Query Parameters:** None\n\n**Response 200 (Success):**\n```json\n[\n  {\n    \"_id\": \"507f1f77bcf86cd799439051\",\n    \"user\": {\n      \"_id\": \"507f1f77bcf86cd799439001\",\n      \"name\": \"John Doe\"\n    },\n    \"orderItems\": [...],\n    \"totalPrice\": 290.78,\n    \"isPaid\": true,\n    \"isDelivered\": false,\n    \"createdAt\": \"2024-01-20T14:30:00.000Z\"\n  },\n  {\n    \"_id\": \"507f1f77bcf86cd799439052\",\n    \"user\": {\n      \"_id\": \"507f1f77bcf86cd799439002\",\n      \"name\": \"Jane Smith\"\n    },\n    \"orderItems\": [...],\n    \"totalPrice\": 450.25,\n    \"isPaid\": true,\n    \"isDelivered\": true,\n    \"createdAt\": \"2024-01-18T09:20:00.000Z\"\n  }\n]\n```\n\n**Errors:**\n- 401: Not authorized, token failed\n- 401: Not authorized, no token\n- 401: Not authorized as an admin\n\n**Notes:**\n- Admin endpoint for order management dashboard\n- User object populated with id and name\n- All orders in system returned\n- No pagination implemented\n- Empty array if no orders exist\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "GET /api/orders",
+    "chunk_index": 6
+  },
+  {
+    "text": "## Order Data Model\n\n| Field | Type | Description |\n|-------|------|-------------|\n| `_id` | ObjectId | Unique order identifier |\n| `user` | ObjectId/Object | Reference to user who placed order |\n| `orderItems` | Array | Array of ordered product items |\n| `shippingAddress` | Object | Delivery address object |\n| `paymentMethod` | String | Payment method (e.g., \"PayPal\") |\n| `paymentResult` | Object | Payment processor response data |\n| `itemsPrice` | Number | Subtotal of items |\n| `taxPrice` | Number | Calculated tax amount |\n| `shippingPrice` | Number | Shipping cost |\n| `totalPrice` | Number | Grand total |\n| `isPaid` | Boolean | Payment completion flag |\n| `paidAt` | Date | Payment timestamp |\n| `isDelivered` | Boolean | Delivery completion flag |\n| `deliveredAt` | Date | Delivery timestamp |\n| `createdAt` | Date | Order creation timestamp |\n| `updatedAt` | Date | Last modification timestamp |\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "Order Data Model",
+    "chunk_index": 7
+  },
+  {
+    "text": "## Order Lifecycle\n\n1. User submits order with items/shipping via POST /api/orders (isPaid: false)\n2. User completes payment with PayPal\n3. Frontend calls PUT /api/orders/:id/pay with PayPal details (isPaid: true)\n4. Admin marks order for shipment\n5. Admin updates status via PUT /api/orders/:id/deliver (isDelivered: true)\n6. User views order history via GET /api/orders/myorders\n\n---",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "Order Lifecycle",
+    "chunk_index": 8
+  },
+  {
+    "text": "## Response Codes\n\n- 200: Successful request\n- 201: Resource created\n- 400: Invalid input or empty order\n- 401: Authentication failed or insufficient permissions\n- 404: Order not found",
+    "source": "api/orders.md",
+    "category": "core",
+    "title": "Orders API Reference",
+    "section": "Response Codes",
+    "chunk_index": 9
+  }
+]

@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAuthenticated users only (final step in checkout). Redirects to shipping or payment if required data is missing.",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA review page with checkout step indicators (all 4 steps shown). Left side displays three sections: shipping address, payment method, and order items list (each item shows image, name, quantity, and line total). Right side shows an order summary card with itemsPrice, shippingPrice, taxPrice, and totalPrice calculations, followed by a \"Place Order\" button.\n\nThe page auto-calculates prices: shipping is free for orders over $100 (otherwise $100), tax is 15% of items price. All prices are formatted to 2 decimal places.",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `cart` slice: `cartItems`, `shippingAddress`, `paymentMethod`\n- `orderCreate` slice: `order`, `success`, `error` flags",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- **On \"Place Order\" button click**: `POST /api/orders` with complete order data (items, address, payment method, prices) via `createOrder()` action\n- On success, order details are returned and user is redirected to order confirmation page",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **CheckoutSteps** – shows all 4 steps completed\n- **ListGroup** (Bootstrap) – sections for shipping, payment, items\n- **Card** – order summary with price breakdown\n- **Message** – error alert if order creation fails\n- **Button** – \"Place Order\" submit button",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Click \"Place Order\"**: Dispatches createOrder action with all cart and address data\n- **Click product link**: Navigates to product detail (within order items)",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- Missing shipping address: Redirects to `/shipping` on mount\n- Missing payment method: Redirects to `/payment` on mount\n- Empty cart: \"Place Order\" button is disabled (disabled={cart.cartItems === 0})\n- Order creation error: Error message displayed, order not created\n- Successful order: User redirected to `/order/:id` confirmation page\n- Price calculation: All decimals handled with Math.round and toFixed(2)\n- Redux state reset: After successful order, USER_DETAILS_RESET and ORDER_CREATE_RESET dispatched",
+    "source": "pages/place-order.md",
+    "category": "core",
+    "title": "Place Order Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

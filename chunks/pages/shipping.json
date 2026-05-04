@@ -1,0 +1,58 @@
+[
+  {
+    "text": "## Access\nAuthenticated users only (redirects to login in checkout flow). Part of the checkout process.",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "Access",
+    "chunk_index": 0
+  },
+  {
+    "text": "## What Users See\nA form container with checkout step indicators showing steps 1 (login) and 2 (shipping) as active/completed. The form contains four input fields: Address, City, Postal Code, and Country. Each field is required. A \"Continue\" button submits the form and proceeds to payment.",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "What Users See",
+    "chunk_index": 1
+  },
+  {
+    "text": "## State (Redux)\n- `cart` slice: `shippingAddress` object with fields `{ address, city, postalCode, country }`",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "State (Redux)",
+    "chunk_index": 2
+  },
+  {
+    "text": "## API Calls\n- No direct API call. Form data is saved to Redux store (cart state) via `saveShippingAddress()` action\n- Data will be used when creating the order",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "API Calls",
+    "chunk_index": 3
+  },
+  {
+    "text": "## Components\n- **FormContainer** – centered form wrapper\n- **CheckoutSteps** – displays checkout progress (step1, step2 props)\n- **Form** (Bootstrap) – four text input fields with labels\n- **Button** – submit button",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "Components",
+    "chunk_index": 4
+  },
+  {
+    "text": "## User Actions\n- **Enter address, city, postal code, country**: Updates local state\n- **Click \"Continue\"**: Validates required fields (HTML5), saves to Redux, navigates to `/payment`",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "User Actions",
+    "chunk_index": 5
+  },
+  {
+    "text": "## Edge Cases\n- Empty required fields: HTML5 form validation prevents submission (browser behavior)\n- Form fields pre-populated: Initial state from Redux (if returning to this step)\n- Navigation away: Data persists in Redux until user logs out or cart is reset\n- Postal code format: No validation, accepts any text\n- Required attribute: All fields marked as required in HTML\n- Form submission: Dispatches action before navigation",
+    "source": "pages/shipping.md",
+    "category": "core",
+    "title": "Shipping Screen",
+    "section": "Edge Cases",
+    "chunk_index": 6
+  }
+]

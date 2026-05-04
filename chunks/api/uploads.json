@@ -1,0 +1,178 @@
+[
+  {
+    "text": "## Overview\n\nThe upload endpoint handles product image uploads. Images must be in JPG, JPEG, or PNG format and cannot exceed 2MB. Only authenticated admin users can upload product images.",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Overview",
+    "chunk_index": 0
+  },
+  {
+    "text": "### POST /api/uploads\n\nUpload a product image file to server storage.\n\n**Auth:** Private/Admin  \n**Description:** Upload product image file\n\n**Headers:**\n```\nAuthorization: Bearer {admin-token}\nContent-Type: multipart/form-data\n```\n\n**Form Data:**\n- `image` (file, required): Image file to upload (field name must be \"image\")\n\n**Response 200 (Success):**\n```\n/uploads/image-1705776000000.jpg\n```\n\n**Errors:**\n- 401: Not authorized, token failed (invalid/expired token)\n- 401: Not authorized, no token\n- 401: Not authorized as an admin (user lacks admin privileges)\n- 400: No image uploaded (missing file in request)\n- 400: Images only (jpg, jpeg, png) (unsupported file type)\n- 400: File size exceeds maximum (file larger than 2MB)\n\n**Notes:**\n- Response is plain text with the file path\n- Path is relative to server root; prepend base URL for full URL\n- File is stored in `uploads/` directory on server\n- Filename format: `{fieldname}-{timestamp}.{extension}`\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "POST /api/uploads",
+    "chunk_index": 1
+  },
+  {
+    "text": "### Allowed File Types\n- `.jpg` (MIME: image/jpeg)\n- `.jpeg` (MIME: image/jpeg)\n- `.png` (MIME: image/png)",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Allowed File Types",
+    "chunk_index": 2
+  },
+  {
+    "text": "### File Size Limits\n- Maximum file size: 2 MB (2097152 bytes)\n- Validation occurs at both extension and MIME type level",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "File Size Limits",
+    "chunk_index": 3
+  },
+  {
+    "text": "### Filename Validation\n\nFiles are validated by two criteria:\n1. **Extension check:** File extension must be `.jpg`, `.jpeg`, or `.png`\n2. **MIME type check:** Declared MIME type must be `image/jpeg` or `image/png`\n\nBoth checks must pass or upload is rejected with error.\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Filename Validation",
+    "chunk_index": 4
+  },
+  {
+    "text": "## Upload Flow\n\n1. Admin user authenticated with valid JWT token\n2. Admin sends POST request with image file in \"image\" form field\n3. Multer middleware:\n   - Validates file extension\n   - Validates MIME type\n   - Checks file size against 2MB limit\n4. If all validations pass:\n   - File saved to `uploads/` directory\n   - Filename generated with timestamp: `image-{timestamp}.{ext}`\n   - Server returns file path as response\n5. If validation fails:\n   - Request returns 400 error\n   - Error message describes validation failure\n   - No file is written to disk\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Upload Flow",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Storage Location\n```\nuploads/\n├── image-1705776000000.jpg\n├── image-1705776015234.jpg\n├── image-1705776030567.png\n└── ...\n```",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Storage Location",
+    "chunk_index": 6
+  },
+  {
+    "text": "### Filename Generation\nMulter diskStorage generates filenames using:\n- Field name from form: `image`\n- Current timestamp: `Date.now()`\n- Original file extension: `.jpg`, `.jpeg`, or `.png`\n\n**Format:** `{fieldname}-{timestamp}{extension}`\n\n**Example outputs:**\n- `image-1705776000000.jpg`\n- `image-1705776015234.jpeg`\n- `image-1705776030567.png`\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Filename Generation",
+    "chunk_index": 7
+  },
+  {
+    "text": "### cURL\n```bash\ncurl -X POST \\\n  -H \"Authorization: Bearer {token}\" \\\n  -F \"image=@/path/to/image.jpg\" \\\n  http://localhost:5000/api/uploads\n```",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "cURL",
+    "chunk_index": 8
+  },
+  {
+    "text": "### JavaScript (Fetch API)\n```javascript\nconst formData = new FormData()\nformData.append('image', fileInputElement.files[0])\n\nconst response = await fetch('/api/uploads', {\n  method: 'POST',\n  headers: {\n    'Authorization': `Bearer ${token}`\n  },\n  body: formData\n})\n\nconst imagePath = await response.text()\nconsole.log('Image path:', imagePath)\n// Output: /uploads/image-1705776000000.jpg\n```",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "JavaScript (Fetch API)",
+    "chunk_index": 9
+  },
+  {
+    "text": "### JavaScript (Axios)\n```javascript\nconst formData = new FormData()\nformData.append('image', fileInputElement.files[0])\n\nconst { data: imagePath } = await axios.post(\n  '/api/uploads',\n  formData,\n  {\n    headers: {\n      'Authorization': `Bearer ${token}`,\n      'Content-Type': 'multipart/form-data'\n    }\n  }\n)\n```\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "JavaScript (Axios)",
+    "chunk_index": 10
+  },
+  {
+    "text": "### File Type Validation\n- Double validation (extension + MIME type) prevents malicious file uploads\n- Only image formats are accepted\n- MIME type checked against declared type (prevents renaming executables)",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "File Type Validation",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Size Limits\n- 2MB maximum prevents disk space exhaustion\n- Limits protect against denial-of-service attacks\n- Appropriate for product thumbnails and detail images",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Size Limits",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Authentication Requirements\n- Admin-only access prevents unauthorized uploads\n- JWT token must be valid and non-expired\n- User account must have `isAdmin: true` flag",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Authentication Requirements",
+    "chunk_index": 13
+  },
+  {
+    "text": "### File Storage\n- Files stored on server filesystem in `uploads/` directory\n- Should be served as static files via web server\n- Consider CDN integration for production systems\n- Implement file cleanup/archival for old images\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "File Storage",
+    "chunk_index": 14
+  },
+  {
+    "text": "### Typical Workflow\n\n1. Admin creates product with sample image:\n   ```\n   POST /api/products\n   Response: product with image: \"/images/sample.jpg\"\n   ```\n\n2. Admin uploads actual product image:\n   ```\n   POST /api/uploads\n   Response: \"/uploads/image-1705776000000.jpg\"\n   ```\n\n3. Admin updates product with new image:\n   ```\n   PUT /api/products/:id\n   Body: { \"image\": \"/uploads/image-1705776000000.jpg\", ... }\n   ```",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Typical Workflow",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Image Path Storage\n\nThe returned file path is stored in the product's `image` field:\n```json\n{\n  \"_id\": \"507f1f77bcf86cd799439011\",\n  \"name\": \"Wireless Headphones\",\n  \"image\": \"/uploads/image-1705776000000.jpg\",\n  ...\n}\n```\n\nImage paths are relative URLs and should be prefixed with the API base URL when constructing full URLs on frontend.\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Image Path Storage",
+    "chunk_index": 16
+  },
+  {
+    "text": "### Common Error Scenarios\n\n**Missing token:**\n```\nStatus: 401\nMessage: \"Not authorized, no token\"\n```\n\n**Invalid/expired token:**\n```\nStatus: 401\nMessage: \"Not authorized, token failed\"\n```\n\n**Not admin:**\n```\nStatus: 401\nMessage: \"Not authorized as an admin\"\n```\n\n**No file uploaded:**\n```\nStatus: 400\nMessage: \"No image uploaded\"\n```\n\n**Unsupported file type:**\n```\nStatus: 400\nMessage: \"Images only (jpg, jpeg, png)\"\n```\n\n**File too large:**\n```\nStatus: 400\nMessage: \"File size exceeds maximum (2097152 bytes)\"\n```\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Common Error Scenarios",
+    "chunk_index": 17
+  },
+  {
+    "text": "## Response Codes\n\n- 200: File uploaded successfully\n- 400: Validation error (file type, size, or missing file)\n- 401: Authentication failed or insufficient permissions\n\n---",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Response Codes",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Environment Variables\n- Base upload directory: `uploads/`\n- Max file size: 2 MB (hardcoded: 2 * 1024 * 1024 bytes)\n- Field name: `image` (multipart form field)",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Environment Variables",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Middleware Stack\n1. `protect` middleware: validates JWT token\n2. `admin` middleware: checks admin privilege\n3. Multer middleware: handles file upload and validation",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Middleware Stack",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Dependencies\n- `multer`: multipart/form-data parsing and file upload handling\n- `path`: Node.js path utilities for filename validation",
+    "source": "api/uploads.md",
+    "category": "core",
+    "title": "File Upload API Reference",
+    "section": "Dependencies",
+    "chunk_index": 21
+  }
+]

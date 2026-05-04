@@ -1,0 +1,258 @@
+[
+  {
+    "text": "# Payments Features — ProShop MERN\n\nПокрывает PayPal sandbox-интеграцию, обработку результата платежа, обновление статуса заказа и трекинг состояния оплаты.\n\n---",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "",
+    "chunk_index": 0
+  },
+  {
+    "text": "### Назначение\nДинамическая загрузка PayPal JavaScript SDK при открытии страницы незаоплаченного заказа. Client ID берётся с сервера, не хардкодится в клиентском коде. Persona: покупатель, готовый оплатить заказ.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 1
+  },
+  {
+    "text": "### User flow\n1. Пользователь открывает `/order/:id` для неоплаченного заказа.\n2. Приложение запрашивает PayPal Client ID с сервера.\n3. Создаётся `<script>` тег с PayPal SDK URL, добавляется в `document.body`.\n4. После загрузки SDK (`script.onload`) → `setSdkReady(true)`.\n5. Показывается PayPal-кнопка.\n6. Пока SDK грузится → `<Loader />`.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 2
+  },
+  {
+    "text": "### Технический impl\n- **Screen:** `OrderScreen.js` — state `sdkReady = false`.\n- **`addPayPalScript` async функция:**\n  ```js\n  const { data: clientId } = await axios.get('/api/config/paypal')\n  const script = document.createElement('script')\n  script.type = 'text/javascript'\n  script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}`\n  script.async = true\n  script.onload = () => setSdkReady(true)\n  document.body.appendChild(script)\n  ```\n- **Условие вызова:** `!order.isPaid && !window.paypal` → только для неоплаченных заказов и только если SDK ещё не загружен.\n- **Если `window.paypal` уже существует** (при re-render) → `setSdkReady(true)` без повторной загрузки скрипта.\n- **Backend endpoint:** `server.js` возвращает `process.env.PAYPAL_CLIENT_ID` или строку `'sb'` (sandbox).",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 3
+  },
+  {
+    "text": "### API endpoints\n- `GET /api/config/paypal` — public (в коде используется без auth header), response: строка с client ID.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 4
+  },
+  {
+    "text": "### Edge cases\n- PayPal SDK уже загружен в `window` → повторный `<script>` не создаётся, `sdkReady=true` немедленно.\n- Сеть недоступна → `axios.get('/api/config/paypal')` выбрасывает ошибку → `addPayPalScript` завершается с исключением → `sdkReady` остаётся false → пользователь видит бесконечный Loader.\n- `PAYPAL_CLIENT_ID` не задан в `.env` → сервер возвращает `'sb'` (тестовый sandbox ID по умолчанию).\n- Script загружается асинхронно — между созданием тега и `onload` может пройти несколько секунд при медленном соединении.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 5
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `PAYPAL_CLIENT_ID` env var на сервере, сетевого доступа к PayPal CDN.\n- От этой фичи зависит: PayPal Button render (Feature 2).\n\n---",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 6
+  },
+  {
+    "text": "## Feature 2: PayPal Payment Button & Transaction Processing",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Feature 2: PayPal Payment Button & Transaction Processing",
+    "chunk_index": 7
+  },
+  {
+    "text": "### Назначение\nКнопка PayPal на странице заказа позволяет провести оплату через PayPal sandbox. После подтверждения пользователем — результат транзакции отправляется на сервер. Persona: покупатель, оплачивающий заказ.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 8
+  },
+  {
+    "text": "### User flow\n1. SDK загружен (`sdkReady=true`) → рендерится `<PayPalButton>`.\n2. Пользователь кликает кнопку PayPal.\n3. Открывается PayPal popup/redirect.\n4. Пользователь логинится в PayPal sandbox и подтверждает платёж.\n5. PayPal возвращает `paymentResult` в `onSuccess` callback.\n6. Вызывается `successPaymentHandler(paymentResult)`.\n7. Диспатчится `payOrder(orderId, paymentResult)`.\n8. Страница обновляется с новым статусом оплаты.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 9
+  },
+  {
+    "text": "### Технический impl\n- **Компонент:** `react-paypal-button-v2` — `<PayPalButton amount={order.totalPrice} onSuccess={successPaymentHandler} />`.\n- **`successPaymentHandler`:**\n  ```js\n  const successPaymentHandler = (paymentResult) => {\n    dispatch(payOrder(orderId, paymentResult))\n  }\n  ```\n- **Action `payOrder(orderId, paymentResult)`:**\n  - Диспатчит `ORDER_PAY_REQUEST`.\n  - PUT `/api/orders/:id/pay` с `paymentResult` в body.\n  - При успехе: `ORDER_PAY_SUCCESS`.\n- **Reducer:** `orderPayReducer` — `{ loading: loadingPay, success: successPay }`.\n- **Видимость кнопки:** `{!order.isPaid && (!sdkReady ? <Loader/> : <PayPalButton .../>)}`.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 10
+  },
+  {
+    "text": "### API endpoints\n- `PUT /api/orders/:id/pay` — private (Bearer token), body: PayPal `paymentResult` object:\n  ```json\n  {\n    \"id\": \"PAY-...\",\n    \"status\": \"COMPLETED\",\n    \"update_time\": \"2026-...\",\n    \"payer\": { \"email_address\": \"buyer@example.com\" }\n  }\n  ```\n  Response: обновлённый order object.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 11
+  },
+  {
+    "text": "### Edge cases\n- Пользователь закрывает PayPal popup без оплаты → `onSuccess` не вызывается, `onError` не обрабатывается явно (только `console.log` в `successPaymentHandler`).\n- Дублирование платежа: если `PUT /pay` упал после успешной транзакции PayPal → заказ не помечен как оплаченный, но деньги списаны. Backend идемпотентности не реализован.\n- `order.totalPrice` передаётся в PayPal — но PayPal не верифицирует сумму заказа на стороне сервера (accept any amount).\n- После `successPay` → `useEffect` диспатчит `ORDER_PAY_RESET` + `getOrderDetails` для обновления данных.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 12
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: PayPal SDK (Feature 1), Auth (token для PUT), Order state.\n- Запускает: Feature 3 (Mark as Paid server update).\n\n---",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 13
+  },
+  {
+    "text": "### Назначение\nСохранение результата PayPal-транзакции в MongoDB: `isPaid=true`, `paidAt=Date.now()`, полный `paymentResult` объект от PayPal. Persona: система после подтверждения оплаты.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 14
+  },
+  {
+    "text": "### User flow\n(автоматический, не требует действий пользователя)\n1. `payOrder` action отправляет PUT запрос с paymentResult.\n2. Контроллер обновляет заказ в MongoDB.\n3. Обновлённый заказ возвращается на фронт.\n4. Redux state `orderPay.success = true`.\n5. `useEffect` в OrderScreen делает re-fetch и обновляет UI.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "User flow",
+    "chunk_index": 15
+  },
+  {
+    "text": "### Технический impl\n- **Controller:** `updateOrderToPaid`:\n  ```js\n  order.isPaid = true\n  order.paidAt = Date.now()\n  order.paymentResult = {\n    id: req.body.id,\n    status: req.body.status,\n    update_time: req.body.update_time,\n    email_address: req.body.payer.email_address\n  }\n  const updatedOrder = await order.save()\n  res.json(updatedOrder)\n  ```\n- **Model fields:**\n  ```\n  isPaid: Boolean (default: false)\n  paidAt: Date\n  paymentResult: { id, status, update_time, email_address }\n  ```\n- Route: `PUT /api/orders/:id/pay` — защищён только `protect`, не `admin` — любой залогиненный пользователь технически может отметить любой заказ оплаченным (security issue учебного проекта).",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 16
+  },
+  {
+    "text": "### API endpoints\n- `PUT /api/orders/:id/pay` — private, response: полный обновлённый order.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "API endpoints",
+    "chunk_index": 17
+  },
+  {
+    "text": "### Edge cases\n- `req.body.payer.email_address` — если PayPal вернул нестандартный формат без `payer.email_address` → TypeError: Cannot read property 'email_address' of undefined → HTTP 500.\n- Повторный вызов (если `isPaid` уже true) → MongoDB перезаписывает `paidAt` и `paymentResult` новыми значениями (нет idempotency check).\n- OrderScreen не проверяет ownership — чужой order ID в PUT → обновляет чужой заказ (auth issue).",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 18
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Order model, Auth middleware (`protect`).\n- Результат виден в: Order Detail page, Profile Order History, Admin Order List.\n\n---",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 19
+  },
+  {
+    "text": "### Назначение\nВизуальное отображение статуса оплаты заказа в нескольких местах UI. Persona: покупатель, отслеживающий статус; администратор, управляющий заказами.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 20
+  },
+  {
+    "text": "### Технический impl\n- **OrderScreen — Payment Method секция:**\n  ```jsx\n  {order.isPaid\n    ? <Message variant='success'>Paid on {order.paidAt}</Message>\n    : <Message variant='danger'>Not Paid</Message>}\n  ```\n- **OrderScreen — Shipping секция:**\n  ```jsx\n  {order.isDelivered\n    ? <Message variant='success'>Delivered on {order.deliveredAt}</Message>\n    : <Message variant='danger'>Not Delivered</Message>}\n  ```\n- **ProfileScreen — Orders table:**\n  - PAID column: `order.isPaid ? order.paidAt.substring(0,10) : <fa-times red>`\n  - DELIVERED column: аналогично.\n- **OrderListScreen (admin):**\n  - Аналогичная таблица со статусами для всех заказов.\n- **Component:** `Message.js` — Bootstrap Alert с variant (danger/success).",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 21
+  },
+  {
+    "text": "### Edge cases\n- `order.paidAt` возвращается как ISO-строка из MongoDB → без `.substring(0,10)` показывается полная дата с временем.\n- `order.paidAt` в OrderScreen не обрезается — показывается полная ISO строка (minor UI inconsistency с ProfileScreen).",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 22
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Order model fields `isPaid`, `paidAt`, `paymentResult`.\n- Используется в четырёх разных местах UI.\n\n---",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 23
+  },
+  {
+    "text": "### Назначение\nБезопасная передача PayPal Client ID на фронтенд без хардкодинга в клиентском бандле. Позволяет менять ключ через env без пересборки фронта. Persona: разработчик, деплоящий проект.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 24
+  },
+  {
+    "text": "### Технический impl\n- **Route:** в `server.js` (не в отдельном роутере):\n  ```js\n  app.get('/api/config/paypal', (req, res) =>\n    res.send(process.env.PAYPAL_CLIENT_ID || 'sb')\n  )\n  ```\n- Default значение `'sb'` — строка sandbox, позволяет работать без настройки `.env` в dev.\n- Маршрут не защищён — `protect` middleware не применяется.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 25
+  },
+  {
+    "text": "### Edge cases\n- Эндпоинт public — любой может получить Client ID. Для PayPal это приемлемо (Client ID не секрет, используется только для инициализации виджета).\n- В production нужно задать реальный `PAYPAL_CLIENT_ID` в `.env` → иначе sandbox ID попадёт в прод.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 26
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: `PAYPAL_CLIENT_ID` в `.env` / `process.env`.\n- Вызывается из: OrderScreen `addPayPalScript` function.\n\n---",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 27
+  },
+  {
+    "text": "### Назначение\nСохранение полных данных PayPal-транзакции (`paymentResult`) в MongoDB для аудита и reconciliation. Persona: администратор, проверяющий транзакции.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Назначение",
+    "chunk_index": 28
+  },
+  {
+    "text": "### Технический impl\n- **Order model field:**\n  ```js\n  paymentResult: {\n    id: { type: String },\n    status: { type: String },\n    update_time: { type: String },\n    email_address: { type: String }\n  }\n  ```\n- Все поля опциональны (нет `required: true`).\n- Хранится payload PayPal-ответа как есть.\n- Не отображается в UI (нет экрана для просмотра деталей транзакции).",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Технический impl",
+    "chunk_index": 29
+  },
+  {
+    "text": "### Edge cases\n- Данные хранятся, но нет UI для их просмотра — только через MongoDB напрямую.\n- Нет верификации подписи PayPal webhook — приложение принимает любой `paymentResult` объект.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Edge cases",
+    "chunk_index": 30
+  },
+  {
+    "text": "### Зависимости\n- Зависит от: Order model, `updateOrderToPaid` controller.\n- Потенциальное расширение: вебхуки PayPal для автоматического обновления статуса.",
+    "source": "features/payments.md",
+    "category": "core",
+    "title": "Payments Features — ProShop MERN",
+    "section": "Зависимости",
+    "chunk_index": 31
+  }
+]
