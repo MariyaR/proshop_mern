@@ -1,4 +1,5 @@
 import path from 'path'
+import { readFileSync } from 'fs'
 import express from 'express'
 import dotenv from 'dotenv'
 import colors from 'colors'
@@ -31,6 +32,11 @@ app.use('/api/upload', uploadRoutes)
 app.get('/api/config/paypal', (req, res) =>
   res.send(process.env.PAYPAL_CLIENT_ID)
 )
+
+app.get('/api/features', (req, res) => {
+  const features = JSON.parse(readFileSync(new URL('./features.json', import.meta.url)))
+  res.json(features)
+})
 
 const __dirname = path.resolve()
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')))
