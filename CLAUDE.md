@@ -95,3 +95,13 @@ Heroku-ready: `heroku-postbuild` in root `package.json` builds the frontend, the
 - Environment variables must be set in Heroku config vars manually (`heroku config:set KEY=value`) — the `.env` file is not deployed.
 - `NODE_ENV=production` must be set on Heroku or the Express server will not serve the frontend static build.
 - The `uploads/` folder (product images) is ephemeral on Heroku — it resets on every deploy. Use cloud storage (e.g., S3) for persistent image uploads in production.
+
+## Product documentation search for proshop_mern (search-docs MCP)
+
+For any questions about functionality, features, architecture, ADRs, runbooks, or incidents — ALWAYS use the `search_project_docs` MCP first. It is faster and returns relevant chunks with metadata. ONLY if the vector search does not return the needed results or you need the full file content from the metadata of a found chunk → fall back to grep + read. DO NOT start with grep + read across the project — it is slow and token-expensive.
+
+## Feature flags management (feature-flags MCP)
+
+- When the user asks about a feature status ("what is the status of gift_message?", "is search_v2 enabled?") — call the feature-flags MCP `get_feature_info`, do not read `features.json` directly.
+- When the user wants to change a status ("enable feature X", "move Y to Testing", "set traffic to 25%") — call the appropriate tools (`set_feature_state`, `adjust_traffic_rollout`). Never edit `backend/features.json` manually via Edit/Write.
+- When the user asks for a list of all features — use the `list_features` tool (if available), do not grep the file.

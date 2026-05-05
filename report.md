@@ -45,3 +45,9 @@ Note: `payment_stripe_v3` does not exist in the knowledge base. All results from
 | 3 | — | — | — |
 
 Note: Query returned runbook template instead of actual incident files (`incidents/`). Fix: add `category: "incident"` filter to query.
+
+## MCP Configuration: Wrong Location Issue
+
+Initially placed the MCP server definitions inside `.claude/settings.json` under `mcpServers`. The servers did not appear in Claude Code and the tools were not available. After some investigation, the correct location for project-level MCP configuration in Claude Code is a separate `.mcp.json` file at the project root — not inside `.claude/settings.json`.
+
+Moving the configuration to `.mcp.json` resolved the issue and the tools became available immediately on reconnect.
